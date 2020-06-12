@@ -45,4 +45,10 @@ add_subdirectory(src/xfile)
 add_subdirectory(src/xfileegg)
 add_subdirectory(src/xfileprogs)
 
+if (HAVE_MAYA)
+    add_subdirectory(src/maya)
+    add_subdirectory(src/mayaegg)
+    add_subdirectory(src/mayaprogs)
+endif()
+
 export_targets(Tools)
