@@ -31,4 +31,18 @@ target_link_libraries(maya2egg p3mayaegg p3maya
   p3converter
   p3progbase)
 
+add_executable(maya2egg_server mayaToEgg_server.cxx mayaToEgg_server.h)
+target_link_libraries(maya2egg_server p3mayaegg p3maya
+  p3converter
+  p3progbase
+  panda)
+
+add_executable(maya2egg_client mayaToEgg_client.cxx mayaToEgg_client.h)
+target_link_libraries(maya2egg_client p3mayaegg p3maya
+  p3converter
+  p3progbase
+  panda)
+
 install(TARGETS maya2egg EXPORT Tools COMPONENT Tools DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS maya2egg_client EXPORT Tools COMPONENT Tools DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS maya2egg_server EXPORT Tools COMPONENT Tools DESTINATION ${CMAKE_INSTALL_BINDIR})
