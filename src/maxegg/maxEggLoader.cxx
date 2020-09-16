@@ -65,11 +65,11 @@ public:
   MaxEggTex   *GetTex(const Filename &fn);
   void         CreateSkinModifier(MaxEggMesh *M);
 
-  typedef phash_map<EggVertexPool *, MaxEggMesh *> MeshTable;
+  typedef phash_map<EggVertexPool *, MaxEggMesh *, pointer_hash> MeshTable;
   typedef second_of_pair_iterator<MeshTable::const_iterator> MeshIterator;
-  typedef phash_map<EggGroup *, MaxEggJoint *> JointTable;
+  typedef phash_map<EggGroup *, MaxEggJoint *, pointer_hash> JointTable;
   typedef second_of_pair_iterator<JointTable::const_iterator> JointIterator;
-  typedef phash_map<std::string, MaxEggTex *> TexTable;
+  typedef phash_map<std::string, MaxEggTex *, string_hash> TexTable;
   typedef second_of_pair_iterator<TexTable::const_iterator> TexIterator;
 
   MeshTable        _mesh_tab;

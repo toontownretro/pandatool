@@ -634,53 +634,51 @@ struct MayaEggVertex
   double                _sumWeights; // [gjeon] to be used in normalizing weights
   int                   _index;
   int                   _external_index; // masad: use egg's index directly
-};
 
-struct MEV_Compare: public stl_hash_compare<MayaEggVertex>
-{
-  size_t operator()(const MayaEggVertex &key) const
+  size_t get_hash() const
   {
-    return key._pos.add_hash(key._normal.get_hash());
+    return _pos.add_hash(_normal.get_hash());
   }
-  bool operator()(const MayaEggVertex &k1, const MayaEggVertex &k2) const
+
+  bool operator < (const MayaEggVertex &k2) const
   {
-    int n = k1._pos.compare_to(k2._pos);
+    int n = _pos.compare_to(k2._pos);
     if (n < 0) {
       return true;
     }
     if (n > 0) {
       return false;
     }
-    n = k1._normal.compare_to(k2._normal);
+    n = _normal.compare_to(k2._normal);
     if (n < 0) {
       return true;
     }
     if (n > 0) {
       return false;
     }
-    n = k1._uv.compare_to(k2._uv);
+    n = _uv.compare_to(k2._uv);
     if (n < 0) {
       return true;
     }
     if (n > 0) {
       return false;
     }
-    n = k1._weights.size() - k2._weights.size();
+    n = _weights.size() - k2._weights.size();
     if (n < 0) {
       return true;
     }
     if (n > 0) {
       return false;
     }
-    for (unsigned int i=0; i<k1._weights.size(); i++) {
-      double d = k1._weights[i].first - k2._weights[i].first;
+    for (unsigned int i=0; i<_weights.size(); i++) {
+      double d = _weights[i].first - k2._weights[i].first;
       if (d < 0) {
         return true;
       }
       if (d > 0) {
         return false;
       }
-      EggGroup *g1 = k1._weights[i].second;
+      EggGroup *g1 = _weights[i].second;
       EggGroup *g2 = k2._weights[i].second;
       if (g1 < g2) {
         return true;
@@ -689,7 +687,7 @@ struct MEV_Compare: public stl_hash_compare<MayaEggVertex>
         return false;
       }
     }
-    n = k1._external_index - k2._external_index;
+    n = _external_index - k2._external_index;
 
     if (n < 0) {
       return true;
@@ -699,10 +697,10 @@ struct MEV_Compare: public stl_hash_compare<MayaEggVertex>
     }
 
     return false;
-  }
+  };
 };
 
-typedef phash_set<MayaEggVertex, MEV_Compare> VertTable;
+typedef phash_set<MayaEggVertex> VertTable;
 
 class MayaEggGeom
 {
