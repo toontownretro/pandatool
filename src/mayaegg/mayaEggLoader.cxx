@@ -1570,7 +1570,8 @@ void MayaEggLoader::TraverseEggNode(EggNode *node, EggGroup *context, string del
         mayaloader_cat.debug() << delim+delstring << "found an EggTable: " << node->get_name() << endl;
       }
     } else if (node->is_of_type(EggXfmSAnim::get_class_type())) {
-      //MayaAnim *anim = GetAnim(DCAST(EggXfmSAnim, node));
+      // Create a MayaAnim equivalent of the EggXfmSAnim
+      GetAnim(DCAST(EggXfmSAnim, node));
       //anim->PrintData();
       if (mayaloader_cat.is_debug()) {
         mayaloader_cat.debug() << delim+delstring << "found an EggXfmSAnim: " << node->get_name() << endl;
