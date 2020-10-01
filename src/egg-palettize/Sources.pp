@@ -8,7 +8,7 @@
   $[if $[HAVE_NET],p3net:c] $[if $[WANT_NATIVE_NET],p3nativenet:c] \
   panda:m \
   p3pandabase:c p3express:c p3downloader:c pandaexpress:m \
-  p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc p3dconfig:c \
+  p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc \
    p3dtool:m
 
 #begin bin_target

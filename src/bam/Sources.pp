@@ -13,8 +13,8 @@
   $[if $[HAVE_AUDIO],p3audio:c] \
   panda:m \
   p3pandabase:c p3express:c pandaexpress:m \
-  p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc p3dconfig:c \
-   p3dtool:m
+  p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc \
+  p3dtool:m
 
 #begin bin_target
   #define TARGET bam-info
@@ -26,6 +26,8 @@
 
   #define INSTALL_HEADERS
 #end bin_target
+
+#if $[HAVE_EGG]
 
 #begin bin_target
   #define TARGET egg2bam
@@ -54,3 +56,5 @@
   #define SOURCES \
     ptsToBam.cxx ptsToBam.h
 #end bin_target
+
+#endif // HAVE_EGG

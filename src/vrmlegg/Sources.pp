@@ -7,7 +7,7 @@
     p3pipeline:c \
     panda:m \
     p3pandabase:c pandaexpress:m \
-    p3interrogatedb p3prc p3dconfig:c  \
+    p3interrogatedb p3prc  \
     p3dtoolutil:c p3dtoolbase:c p3dtool:m
 
   #define SOURCES \

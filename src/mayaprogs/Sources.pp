@@ -29,7 +29,7 @@
     p3egg:c pandaegg:m \
     p3linmath:c p3putil:c panda:m \
     p3express:c pandaexpress:m \
-    p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc p3dconfig:c  p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
+    p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc  p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
     p3pipeline:c p3pnmimage:c
 
   // Irix requires this to be named explicitly.
@@ -50,7 +50,7 @@
     p3egg:c pandaegg:m \
     p3linmath:c p3putil:c panda:m \
     p3express:c pandaexpress:m \
-    p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc p3dconfig:c  p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
+    p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc  p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
     p3pipeline:c p3pnmimage:c
 
   // Irix requires this to be named explicitly.
@@ -71,7 +71,7 @@
     p3egg:c pandaegg:m \
     p3linmath:c p3putil:c panda:m \
     p3express:c pandaexpress:m \
-    p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc p3dconfig:c  p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
+    p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc  p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
     p3pipeline:c p3pnmimage:c
 
   // Irix requires this to be named explicitly.
@@ -101,7 +101,7 @@
     p3egg:c pandaegg:m \
     p3linmath:c p3putil:c panda:m \
     p3express:c pandaexpress:m \
-    p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc p3dconfig:c  p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
+    p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc  p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
     p3pipeline:c p3pnmimage:c
 
   // Irix requires this to be named explicitly.
@@ -110,37 +110,6 @@
 
   #define SOURCES \
     eggToMaya.cxx eggToMaya.h
-
-#end bin_target
-
-
-#begin bin_target
-  #define TARGET mayacopy
-  #define OTHER_LIBS \
-    p3dtoolbase:c p3dtoolutil:c p3dtool:m p3prc  \
-    p3express:c pandaexpress:m
-  #define SOURCES \
-    mayapath.cxx
-#end bin_target
-
-#begin bin_target
-  #define USE_PACKAGES maya
-  #define TARGET mayacopy_bin
-  #define LOCAL_LIBS p3cvscopy mayabase p3progbase
-
-  #define OTHER_LIBS \
-    p3egg:c pandaegg:m \
-    p3linmath:c panda:m \
-    p3express:c pandaexpress:m \
-    p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc p3dconfig:c  p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
-    p3putil:c p3pipeline:c p3pnmimage:c
-
-  // Irix requires this to be named explicitly.
-  #define UNIX_SYS_LIBS \
-    ExtensionLayer
-
-  #define SOURCES \
-    mayaCopy.cxx mayaCopy.h
 
 #end bin_target
 
@@ -155,7 +124,7 @@
     p3framework:m \
     p3linmath:c p3putil:c panda:m \
     p3express:c pandaexpress:m \
-    p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc p3dconfig:c  p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
+    p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc  p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
     p3pipeline:c
 
   #define BUILDING_DLL BUILDING_MISC
@@ -195,7 +164,7 @@
     p3framework:m \
     p3linmath:c p3putil:c panda:m \
     p3express:c pandaexpress:m \
-    p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc p3dconfig:c  p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
+    p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc  p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
     p3pipeline:c
 
   #define BUILDING_DLL BUILDING_MISC

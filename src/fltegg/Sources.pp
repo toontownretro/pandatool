@@ -7,7 +7,7 @@
     p3pstatclient:c p3downloader:c p3net:c p3nativenet:c \
     panda:m \
     p3pandabase:c p3express:c pandaexpress:m \
-    p3interrogatedb p3prc p3dconfig:c  \
+    p3interrogatedb p3prc  \
     p3dtoolutil:c p3dtoolbase:c p3dtool:m
   #define UNIX_SYS_LIBS \
     m

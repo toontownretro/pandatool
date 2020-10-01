@@ -8,7 +8,7 @@
     panda:m \
     p3pandabase:c p3express:c p3linmath:c pandaexpress:m \
     $[if $[HAVE_NET],p3net:c] $[if $[WANT_NATIVE_NET],p3nativenet:c] \
-    p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc p3dconfig:c  p3dtool:m
+    p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc  p3dtool:m
 
   #define SOURCES \
     pStatClientData.cxx pStatClientData.h pStatGraph.I pStatGraph.cxx \

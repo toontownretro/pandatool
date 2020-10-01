@@ -4,7 +4,7 @@
   p3egg:c pandaegg:m \
   p3pipeline:c p3pnmimage:c p3putil:c p3event:c p3mathutil:c p3linmath:c panda:m \
   p3pandabase:c p3express:c pandaexpress:m \
-  p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc p3dconfig:c  p3dtool:m
+  p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc p3dtool:m
 
 #begin bin_target
   #define TARGET dae2egg

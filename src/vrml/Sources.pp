@@ -8,7 +8,7 @@
     p3mathutil:c p3linmath:c p3pipeline:c \
     panda:m \
     p3pandabase:c p3express:c pandaexpress:m \
-    p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc p3dconfig:c  p3dtool:m
+    p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc  p3dtool:m
 
   #define USE_PACKAGES zlib
 

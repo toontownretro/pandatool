@@ -8,7 +8,7 @@
   #define OTHER_LIBS \
     p3putil:c panda:m \
     p3express:c pandaexpress:m \
-    p3dtoolutil:c p3dtoolbase:c p3prc p3dconfig:c  p3dtool:m \
+    p3dtoolutil:c p3dtoolbase:c p3prc  p3dtool:m \
     p3pipeline:c p3interrogatedb
 
   #define SOURCES \

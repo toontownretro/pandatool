@@ -14,7 +14,7 @@
     $[if $[HAVE_NET],p3net:c] $[if $[WANT_NATIVE_NET],p3nativenet:c] \
     p3pandabase:c p3pnmimage:c p3event:c p3pstatclient:c \
     p3linmath:c p3putil:c p3pipeline:c p3express:c pandaexpress:m panda:m \
-    p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc p3dconfig:c  p3dtool:m
+    p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc  p3dtool:m
 
   #define SOURCES \
     gtkStats.cxx \
