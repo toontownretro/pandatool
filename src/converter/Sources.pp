@@ -2,7 +2,7 @@
   p3egg:c pandaegg:m \
   p3pipeline:c p3event:c p3display:c p3pgraph:c panda:m \
   p3mathutil:c p3linmath:c p3putil:c p3express:c p3pandabase:c \
-  p3interrogatedb:c p3prc:c p3dconfig:c p3dtoolconfig:m \
+  p3interrogatedb p3prc p3dconfig:c  \
   p3dtoolutil:c p3dtoolbase:c p3dtool:m
 
 #begin ss_lib_target

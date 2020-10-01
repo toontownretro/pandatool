@@ -6,7 +6,7 @@
   p3putil:c p3mathutil:c p3pipeline:c p3pstatclient:c p3downloader:c p3net:c p3nativenet:c \
   panda:m \
   p3pandabase:c p3express:c pandaexpress:m \
-  p3interrogatedb:c p3dtoolutil:c p3dtoolbase:c p3prc:c p3dconfig:c p3dtoolconfig:m p3dtool:m
+  p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc p3dconfig:c  p3dtool:m
 
 #begin bin_target
   #define TARGET fltcopy

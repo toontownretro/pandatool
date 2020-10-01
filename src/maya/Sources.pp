@@ -8,8 +8,8 @@
   #define OTHER_LIBS \
     p3putil:c panda:m \
     p3express:c pandaexpress:m \
-    p3dtoolutil:c p3dtoolbase:c p3prc:c p3dconfig:c p3dtoolconfig:m p3dtool:m \
-    p3pipeline:c p3interrogatedb:c
+    p3dtoolutil:c p3dtoolbase:c p3prc p3dconfig:c  p3dtool:m \
+    p3pipeline:c p3interrogatedb
 
   #define SOURCES \
     config_maya.cxx config_maya.h \
@@ -21,4 +21,3 @@
     post_maya_include.h pre_maya_include.h
 
 #end ss_lib_target
-

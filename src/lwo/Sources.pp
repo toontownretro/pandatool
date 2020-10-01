@@ -3,7 +3,7 @@
   p3mathutil:c p3linmath:c p3putil:c p3pipeline:c p3event:c \
   panda:m \
   p3pandabase:c p3express:c pandaexpress:m \
-  p3interrogatedb:c p3prc:c p3dconfig:c p3dtoolconfig:m \
+  p3interrogatedb p3prc p3dconfig:c  \
   p3dtoolutil:c p3dtoolbase:c p3dtool:m
 #define UNIX_SYS_LIBS m
 

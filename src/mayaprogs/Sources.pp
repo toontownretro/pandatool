@@ -5,8 +5,8 @@
 #begin bin_target
   #define TARGET maya2egg
   #define OTHER_LIBS \
-    p3dtoolbase:c p3dtoolutil:c p3dtool:m p3prc:c p3dtoolconfig:m \
-    p3express:c pandaexpress:m 
+    p3dtoolbase:c p3dtoolutil:c p3dtool:m p3prc  \
+    p3express:c pandaexpress:m
   #define SOURCES \
     mayapath.cxx
 #end bin_target
@@ -14,8 +14,8 @@
 #begin bin_target
   #define TARGET maya2egg_server
   #define OTHER_LIBS \
-    p3dtoolbase:c p3dtoolutil:c p3dtool:m p3prc:c p3dtoolconfig:m \
-    p3express:c pandaexpress:m 
+    p3dtoolbase:c p3dtoolutil:c p3dtool:m p3prc  \
+    p3express:c pandaexpress:m
   #define SOURCES \
     mayapath.cxx
 #end bin_target
@@ -29,7 +29,7 @@
     p3egg:c pandaegg:m \
     p3linmath:c p3putil:c panda:m \
     p3express:c pandaexpress:m \
-    p3interrogatedb:c p3dtoolutil:c p3dtoolbase:c p3prc:c p3dconfig:c p3dtoolconfig:m p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
+    p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc p3dconfig:c  p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
     p3pipeline:c p3pnmimage:c
 
   // Irix requires this to be named explicitly.
@@ -50,7 +50,7 @@
     p3egg:c pandaegg:m \
     p3linmath:c p3putil:c panda:m \
     p3express:c pandaexpress:m \
-    p3interrogatedb:c p3dtoolutil:c p3dtoolbase:c p3prc:c p3dconfig:c p3dtoolconfig:m p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
+    p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc p3dconfig:c  p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
     p3pipeline:c p3pnmimage:c
 
   // Irix requires this to be named explicitly.
@@ -71,7 +71,7 @@
     p3egg:c pandaegg:m \
     p3linmath:c p3putil:c panda:m \
     p3express:c pandaexpress:m \
-    p3interrogatedb:c p3dtoolutil:c p3dtoolbase:c p3prc:c p3dconfig:c p3dtoolconfig:m p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
+    p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc p3dconfig:c  p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
     p3pipeline:c p3pnmimage:c
 
   // Irix requires this to be named explicitly.
@@ -86,8 +86,8 @@
 #begin bin_target
   #define TARGET egg2maya
   #define OTHER_LIBS \
-    p3dtoolbase:c p3dtoolutil:c p3dtool:m p3prc:c p3dtoolconfig:m \
-    p3express:c pandaexpress:m 
+    p3dtoolbase:c p3dtoolutil:c p3dtool:m p3prc  \
+    p3express:c pandaexpress:m
   #define SOURCES \
     mayapath.cxx
 #end bin_target
@@ -101,7 +101,7 @@
     p3egg:c pandaegg:m \
     p3linmath:c p3putil:c panda:m \
     p3express:c pandaexpress:m \
-    p3interrogatedb:c p3dtoolutil:c p3dtoolbase:c p3prc:c p3dconfig:c p3dtoolconfig:m p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
+    p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc p3dconfig:c  p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
     p3pipeline:c p3pnmimage:c
 
   // Irix requires this to be named explicitly.
@@ -117,8 +117,8 @@
 #begin bin_target
   #define TARGET mayacopy
   #define OTHER_LIBS \
-    p3dtoolbase:c p3dtoolutil:c p3dtool:m p3prc:c p3dtoolconfig:m \
-    p3express:c pandaexpress:m 
+    p3dtoolbase:c p3dtoolutil:c p3dtool:m p3prc  \
+    p3express:c pandaexpress:m
   #define SOURCES \
     mayapath.cxx
 #end bin_target
@@ -132,7 +132,7 @@
     p3egg:c pandaegg:m \
     p3linmath:c panda:m \
     p3express:c pandaexpress:m \
-    p3interrogatedb:c p3dtoolutil:c p3dtoolbase:c p3prc:c p3dconfig:c p3dtoolconfig:m p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
+    p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc p3dconfig:c  p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
     p3putil:c p3pipeline:c p3pnmimage:c
 
   // Irix requires this to be named explicitly.
@@ -155,7 +155,7 @@
     p3framework:m \
     p3linmath:c p3putil:c panda:m \
     p3express:c pandaexpress:m \
-    p3interrogatedb:c p3dtoolutil:c p3dtoolbase:c p3prc:c p3dconfig:c p3dtoolconfig:m p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
+    p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc p3dconfig:c  p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
     p3pipeline:c
 
   #define BUILDING_DLL BUILDING_MISC
@@ -195,7 +195,7 @@
     p3framework:m \
     p3linmath:c p3putil:c panda:m \
     p3express:c pandaexpress:m \
-    p3interrogatedb:c p3dtoolutil:c p3dtoolbase:c p3prc:c p3dconfig:c p3dtoolconfig:m p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
+    p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc p3dconfig:c  p3dtool:m $[if $[WINDOWS_PLATFORM],p3pystub,] \
     p3pipeline:c
 
   #define BUILDING_DLL BUILDING_MISC
@@ -220,8 +220,8 @@
     p3mathutil:c p3linmath:c p3putil:c panda:m \
     p3express:c pandaexpress:m \
     p3dtoolconfig p3dtool \
-    p3event:c p3gobj:c p3chan:c p3pgraph:c p3parametrics:c p3char:c p3prc:c p3dtoolutil:c \
-    p3interrogatedb:c p3dtoolbase:c p3collide:c p3pnmimage:c p3dgraph:c p3tform:c \
+    p3event:c p3gobj:c p3chan:c p3pgraph:c p3parametrics:c p3char:c p3prc p3dtoolutil:c \
+    p3interrogatedb p3dtoolbase:c p3collide:c p3pnmimage:c p3dgraph:c p3tform:c \
     p3pipeline:c p3pstatclient:c p3grutil:c p3gsgbase:c p3net:c p3display:c \
     p3cull:c p3text:c p3nativenet:c p3movies:c p3audio:c \
     $[if $[HAVE_FREETYPE],p3pnmtext:c]
