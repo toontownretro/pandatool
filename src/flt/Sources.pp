@@ -1,16 +1,16 @@
 #define USE_PACKAGES zlib
 
 #begin ss_lib_target
-  #define TARGET p3flt
-  #define LOCAL_LIBS p3converter p3pandatoolbase
+  #define TARGET flt
+  #define LOCAL_LIBS converter pandatoolbase
   #define OTHER_LIBS \
-    p3egg:c pandaegg:m \
-    p3pipeline:c p3pstatclient:c p3downloader:c p3net:c p3nativenet:c \
-    p3mathutil:c p3linmath:c p3putil:c p3event:c p3express:c \
+    egg:c pandaegg:m \
+    pipeline:c pstatclient:c downloader:c net:c nativenet:c \
+    mathutil:c linmath:c putil:c event:c express:c \
     panda:m \
-    p3pandabase:c pandaexpress:m \
-    p3interrogatedb p3prc  \
-    p3dtoolutil:c p3dtoolbase:c p3dtool:m
+    pandabase:c pandaexpress:m \
+    interrogatedb prc  \
+    dtoolutil:c dtoolbase:c dtool:m
   #define UNIX_SYS_LIBS m
 
   #define SOURCES \

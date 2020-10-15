@@ -1,14 +1,14 @@
 #define BUILD_DIRECTORY $[HAVE_NET]
 
 #begin ss_lib_target
-  #define TARGET p3pstatserver
-  #define LOCAL_LIBS p3pandatoolbase
+  #define TARGET pstatserver
+  #define LOCAL_LIBS pandatoolbase
   #define OTHER_LIBS \
-    p3pstatclient:c p3downloader:c p3net:c p3putil:c p3pipeline:c \
+    pstatclient:c downloader:c net:c putil:c pipeline:c \
     panda:m \
-    p3pandabase:c p3express:c p3linmath:c pandaexpress:m \
-    $[if $[HAVE_NET],p3net:c] $[if $[WANT_NATIVE_NET],p3nativenet:c] \
-    p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc  p3dtool:m
+    pandabase:c express:c linmath:c pandaexpress:m \
+    $[if $[HAVE_NET],net:c] $[if $[WANT_NATIVE_NET],nativenet:c] \
+    interrogatedb dtoolutil:c dtoolbase:c prc  dtool:m
 
   #define SOURCES \
     pStatClientData.cxx pStatClientData.h pStatGraph.I pStatGraph.cxx \

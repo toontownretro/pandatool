@@ -1,20 +1,20 @@
 #define USE_PACKAGES cg  // from gobj.
 
 #define OTHER_LIBS \
-  p3egg:c pandaegg:m \
-  p3pgraph:c p3pgraphnodes:c p3gobj:c p3linmath:c p3putil:c \
-  p3pnmimage:c p3pnmimagetypes:c p3display:c p3pipeline:c \
-  p3event:c p3mathutil:c p3cull:c p3gsgbase:c p3pstatclient:c \
-  $[if $[HAVE_NET],p3net:c] $[if $[WANT_NATIVE_NET],p3nativenet:c] \
+  egg:c pandaegg:m \
+  pgraph:c pgraphnodes:c gobj:c linmath:c putil:c \
+  pnmimage:c pnmimagetypes:c display:c pipeline:c \
+  event:c mathutil:c cull:c gsgbase:c pstatclient:c \
+  $[if $[HAVE_NET],net:c] $[if $[WANT_NATIVE_NET],nativenet:c] \
   panda:m \
-  p3pandabase:c p3express:c p3downloader:c pandaexpress:m \
-  p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc \
-   p3dtool:m
+  pandabase:c express:c downloader:c pandaexpress:m \
+  interrogatedb dtoolutil:c dtoolbase:c prc \
+   dtool:m
 
 #begin bin_target
   #define TARGET egg-palettize
   #define LOCAL_LIBS \
-    p3palettizer p3eggbase p3progbase
+    palettizer eggbase progbase
 
   #define SOURCES \
      eggPalettize.h eggPalettize.cxx
@@ -22,10 +22,10 @@
 #end bin_target
 
 #begin lib_target
-  #define TARGET p3txafile
+  #define TARGET txafile
   #define BUILDING_DLL BUILDING_MISC
   #define LOCAL_LIBS \
-    p3palettizer
+    palettizer
 
   #define SOURCES \
     txaFileFilter.h txaFileFilter.I txaFileFilter.cxx

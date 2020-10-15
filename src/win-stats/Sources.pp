@@ -4,10 +4,10 @@
 #begin bin_target
   #define TARGET pstats
   #define LOCAL_LIBS \
-    p3progbase p3pstatserver
+    progbase pstatserver
   #define OTHER_LIBS \
-    p3pstatclient:c p3linmath:c p3putil:c p3net:c p3express:c pandaexpress:m panda:m \
-    p3dtoolutil:c p3dtoolbase:c p3prc  p3dtool:m
+    pstatclient:c linmath:c putil:c net:c express:c pandaexpress:m panda:m \
+    dtoolutil:c dtoolbase:c prc  dtool:m
 
   #define SOURCES \
     winStats.cxx \

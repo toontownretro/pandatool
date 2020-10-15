@@ -3,19 +3,19 @@
 #define USE_PACKAGES freetype
 
 #define LOCAL_LIBS \
-  p3palettizer p3eggbase p3progbase
+  palettizer eggbase progbase
 
 #define OTHER_LIBS \
-    p3egg:c pandaegg:m \
-    p3pipeline:c p3event:c p3pstatclient:c panda:m \
-    p3parametrics:c p3gsgbase:c p3gobj:c \
-    p3pandabase:c p3pnmimage:c p3pnmimagetypes:c p3pnmtext:c \
-    p3mathutil:c p3linmath:c p3putil:c p3express:c \
+    egg:c pandaegg:m \
+    pipeline:c event:c pstatclient:c panda:m \
+    parametrics:c gsgbase:c gobj:c \
+    pandabase:c pnmimage:c pnmimagetypes:c pnmtext:c \
+    mathutil:c linmath:c putil:c express:c \
     pandaexpress:m \
-    p3interrogatedb p3prc  \
-    p3dtoolutil:c p3dtoolbase:c p3dtool:m \
-    $[if $[WANT_NATIVE_NET],p3nativenet:c] \
-    $[if $[and $[HAVE_NET],$[WANT_NATIVE_NET]],p3net:c p3downloader:c]
+    interrogatedb prc  \
+    dtoolutil:c dtoolbase:c dtool:m \
+    $[if $[WANT_NATIVE_NET],nativenet:c] \
+    $[if $[and $[HAVE_NET],$[WANT_NATIVE_NET]],net:c downloader:c]
 
 #begin bin_target
   #define TARGET egg-mkfont

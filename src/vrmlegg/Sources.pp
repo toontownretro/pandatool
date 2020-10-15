@@ -1,14 +1,14 @@
 #begin ss_lib_target
-  #define TARGET p3vrmlegg
-  #define LOCAL_LIBS p3converter p3vrml p3pandatoolbase
+  #define TARGET vrmlegg
+  #define LOCAL_LIBS converter vrml pandatoolbase
   #define OTHER_LIBS \
-    p3egg:c pandaegg:m \
-    p3mathutil:c p3linmath:c p3event:c p3putil:c p3express:c \
-    p3pipeline:c \
+    egg:c pandaegg:m \
+    mathutil:c linmath:c event:c putil:c express:c \
+    pipeline:c \
     panda:m \
-    p3pandabase:c pandaexpress:m \
-    p3interrogatedb p3prc  \
-    p3dtoolutil:c p3dtoolbase:c p3dtool:m
+    pandabase:c pandaexpress:m \
+    interrogatedb prc  \
+    dtoolutil:c dtoolbase:c dtool:m
 
   #define SOURCES \
     indexedFaceSet.cxx indexedFaceSet.h \

@@ -1,18 +1,18 @@
 #define OTHER_LIBS \
-   p3pipeline:c panda:m \
-   p3parametrics:c p3collide:c p3chan:c \
-   p3char:c p3gsgbase:c p3gobj:c p3pgraphnodes:c \
-   p3tform:c p3dgraph:c p3text:c p3movies:c \
-   p3audio:c p3cull:c p3device:c \
-   p3pnmtext:c \
-   p3express:c p3putil:c p3pandabase:c pandaexpress:m \
-   p3interrogatedb p3prc  \
-   p3dtoolutil:c p3dtoolbase:c p3dtool:m
+   pipeline:c panda:m \
+   parametrics:c collide:c chan:c \
+   char:c gsgbase:c gobj:c pgraphnodes:c \
+   tform:c dgraph:c text:c movies:c \
+   audio:c cull:c device:c \
+   pnmtext:c \
+   express:c putil:c pandabase:c pandaexpress:m \
+   interrogatedb prc  \
+   dtoolutil:c dtoolbase:c dtool:m
 
 #define USE_PACKAGES threads
 
 #begin ss_lib_target
-  #define TARGET p3pandatoolbase
+  #define TARGET pandatoolbase
 
   #define SOURCES \
     animationConvert.cxx animationConvert.h \

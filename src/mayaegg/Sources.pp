@@ -2,15 +2,15 @@
 
 #begin ss_lib_target
   #define USE_PACKAGES maya
-  #define TARGET p3mayaegg
+  #define TARGET mayaegg
   #define LOCAL_LIBS \
-    mayabase p3converter p3pandatoolbase
+    mayabase converter pandatoolbase
   #define OTHER_LIBS \
-    p3egg:c pandaegg:m \
-    p3linmath:c p3putil:c panda:m \
-    p3express:c pandaexpress:m \
-    p3dtoolutil:c p3dtoolbase:c p3prc  p3dtool:m \
-    p3pipeline:c p3interrogatedb p3gobj:c
+    egg:c pandaegg:m \
+    linmath:c putil:c panda:m \
+    express:c pandaexpress:m \
+    dtoolutil:c dtoolbase:c prc  dtool:m \
+    pipeline:c interrogatedb gobj:c
 
   #define UNIX_SYS_LIBS \
     m

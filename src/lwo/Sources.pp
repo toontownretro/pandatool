@@ -1,14 +1,14 @@
-#define LOCAL_LIBS p3pandatoolbase
+#define LOCAL_LIBS pandatoolbase
 #define OTHER_LIBS \
-  p3mathutil:c p3linmath:c p3putil:c p3pipeline:c p3event:c \
+  mathutil:c linmath:c putil:c pipeline:c event:c \
   panda:m \
-  p3pandabase:c p3express:c pandaexpress:m \
-  p3interrogatedb p3prc  \
-  p3dtoolutil:c p3dtoolbase:c p3dtool:m
+  pandabase:c express:c pandaexpress:m \
+  interrogatedb prc  \
+  dtoolutil:c dtoolbase:c dtool:m
 #define UNIX_SYS_LIBS m
 
 #begin ss_lib_target
-  #define TARGET p3lwo
+  #define TARGET lwo
 
   #define SOURCES \
      config_lwo.h iffChunk.I iffChunk.h iffGenericChunk.I  \

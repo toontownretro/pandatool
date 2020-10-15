@@ -1,20 +1,20 @@
 #define UNIX_SYS_LIBS m
 
 #define OTHER_LIBS \
-    p3egg:c p3egg2pg:c pandaegg:m \
-    p3pipeline:c p3event:c p3pstatclient:c panda:m \
-    p3pandabase:c p3pnmimage:c p3mathutil:c p3linmath:c p3putil:c p3express:c \
-    p3grutil:c p3text:c p3movies:c p3audio:c p3cull:c p3device:c \
-    p3pnmtext:c \
+    egg:c egg2pg:c pandaegg:m \
+    pipeline:c event:c pstatclient:c panda:m \
+    pandabase:c pnmimage:c mathutil:c linmath:c putil:c express:c \
+    grutil:c text:c movies:c audio:c cull:c device:c \
+    pnmtext:c \
     pandaexpress:m \
-    p3interrogatedb p3prc  \
-    p3dtoolutil:c p3dtoolbase:c p3dtool:m \
-    $[if $[WANT_NATIVE_NET],p3nativenet:c] \
-    $[if $[and $[HAVE_NET],$[WANT_NATIVE_NET]],p3net:c p3downloader:c]
+    interrogatedb prc  \
+    dtoolutil:c dtoolbase:c dtool:m \
+    $[if $[WANT_NATIVE_NET],nativenet:c] \
+    $[if $[and $[HAVE_NET],$[WANT_NATIVE_NET]],net:c downloader:c]
 
 #begin bin_target
   #define TARGET obj2egg
-  #define LOCAL_LIBS p3objegg p3eggbase p3progbase
+  #define LOCAL_LIBS objegg eggbase progbase
 
   #define SOURCES \
     objToEgg.cxx objToEgg.h
@@ -23,7 +23,7 @@
 
 #begin bin_target
   #define TARGET egg2obj
-  #define LOCAL_LIBS p3objegg p3eggbase p3progbase
+  #define LOCAL_LIBS objegg eggbase progbase
 
   #define SOURCES \
     eggToObj.cxx eggToObj.h

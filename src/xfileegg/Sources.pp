@@ -1,14 +1,14 @@
 #begin ss_lib_target
-  #define TARGET p3xfileegg
-  #define LOCAL_LIBS p3xfile p3eggbase p3progbase p3pandatoolbase
+  #define TARGET xfileegg
+  #define LOCAL_LIBS xfile eggbase progbase pandatoolbase
   #define OTHER_LIBS \
-    p3egg:c pandaegg:m \
-    p3mathutil:c p3linmath:c p3putil:c p3pipeline:c p3event:c \
-    p3pnmimage:c \
+    egg:c pandaegg:m \
+    mathutil:c linmath:c putil:c pipeline:c event:c \
+    pnmimage:c \
     panda:m \
-    p3pandabase:c p3express:c pandaexpress:m \
-    p3interrogatedb p3prc  \
-    p3dtoolutil:c p3dtoolbase:c p3dtool:m
+    pandabase:c express:c pandaexpress:m \
+    interrogatedb prc  \
+    dtoolutil:c dtoolbase:c dtool:m
 
   #define SOURCES \
      xFileAnimationSet.h xFileAnimationSet.I \

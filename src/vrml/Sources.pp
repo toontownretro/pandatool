@@ -1,14 +1,14 @@
 #define YACC_PREFIX vrmlyy
 
 #begin ss_lib_target
-  #define TARGET p3vrml
+  #define TARGET vrml
   #define LOCAL_LIBS \
-    p3pandatoolbase
+    pandatoolbase
   #define OTHER_LIBS \
-    p3mathutil:c p3linmath:c p3pipeline:c \
+    mathutil:c linmath:c pipeline:c \
     panda:m \
-    p3pandabase:c p3express:c pandaexpress:m \
-    p3interrogatedb p3dtoolutil:c p3dtoolbase:c p3prc  p3dtool:m
+    pandabase:c express:c pandaexpress:m \
+    interrogatedb dtoolutil:c dtoolbase:c prc  dtool:m
 
   #define USE_PACKAGES zlib
 

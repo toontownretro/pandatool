@@ -4,12 +4,12 @@
   #define USE_PACKAGES maya
   #define TARGET mayabase
   #define LOCAL_LIBS \
-    p3converter p3pandatoolbase
+    converter pandatoolbase
   #define OTHER_LIBS \
-    p3putil:c panda:m \
-    p3express:c pandaexpress:m \
-    p3dtoolutil:c p3dtoolbase:c p3prc  p3dtool:m \
-    p3pipeline:c p3interrogatedb
+    putil:c panda:m \
+    express:c pandaexpress:m \
+    dtoolutil:c dtoolbase:c prc  dtool:m \
+    pipeline:c interrogatedb
 
   #define SOURCES \
     config_maya.cxx config_maya.h \
