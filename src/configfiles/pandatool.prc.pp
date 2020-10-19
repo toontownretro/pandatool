@@ -16,6 +16,6 @@
 # into Panda, for instance via the loadModel() call or on the pview
 # command line.
 
-load-file-type p3ptloader
+load-file-type ptloader
 
 #end 30_pandatool.prc
