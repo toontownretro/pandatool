@@ -21,6 +21,9 @@
 #include "samplerState.h"
 #include "texture.h"
 
+/**
+ * A program to output a Panda Texture Object from an input image.
+ */
 class MakeTxo : public ProgramBase, public WithOutputFile {
 public:
   MakeTxo();
