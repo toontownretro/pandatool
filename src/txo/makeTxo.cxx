@@ -16,6 +16,7 @@
 #include "texturePool.h"
 #include "loaderOptions.h"
 #include "luse.h"
+#include "pnmImage.h"
 
 /**
  *
@@ -23,6 +24,8 @@
 MakeTxo::
 MakeTxo() : WithOutputFile(true, false, true)
 {
+  _extract_type = nullptr;
+  _got_extract = false;
   _srgb = false;
   _strip_alpha = false;
   _mipmap = false;
@@ -32,10 +35,6 @@ MakeTxo() : WithOutputFile(true, false, true)
   _filter_mode = F_trilinear;
   _type = T_2d;
   _auto_scale = ATS_none;
-  _x = 0;
-  _got_x = false;
-  _y = 0;
-  _got_y = false;
   _scale = 1.0;
   _got_scale = false;
 
@@ -47,6 +46,7 @@ MakeTxo() : WithOutputFile(true, false, true)
   clear_runlines();
   add_runline("[opts] input.jpg output.txo");
   add_runline("[opts] -o output.txo input.jpg");
+  add_runline("-x [format] input.txo");
 
   add_option
     ("o", "filename", 0,
@@ -168,19 +168,15 @@ MakeTxo() : WithOutputFile(true, false, true)
      &MakeTxo::dispatch_auto_scale, nullptr, &_auto_scale);
 
   add_option
-    ("x", "integer", 0,
-     "Set a new X size for the texture.",
-     &MakeTxo::dispatch_int, &_got_x, &_x);
-
-  add_option
-    ("y", "integer", 0,
-     "Set a new Y size for the texture.",
-     &MakeTxo::dispatch_int, &_got_y, &_y);
-
-  add_option
     ("scale", "float", 0,
      "Scale the texture dimensions by this amount.",
      &MakeTxo::dispatch_double, &_got_scale, &_scale);
+
+  add_option
+    ("x", "format", 0,
+     "Specify that you would like to extract a .txo to one or more raw "
+     "images in the specified image format.",
+     &MakeTxo::dispatch_image_type, &_got_extract, &_extract_type);
 }
 
 /**
@@ -188,7 +184,61 @@ MakeTxo() : WithOutputFile(true, false, true)
  */
 void MakeTxo::
 run() {
-  PT(Texture) tex;
+  if (_got_extract && _extract_type) {
+    run_extract();
+  } else {
+    run_create();
+  }
+}
+
+/**
+ *
+ */
+void MakeTxo::
+run_extract() {
+  PT(Texture) tex = TexturePool::load_texture(_input_image);
+  if (!tex) {
+    nout << "Couldn't load input .txo!\n";
+    return;
+  }
+
+  std::ostringstream ss;
+  ss << tex->get_name() << "_mip#_page#."
+     << _extract_type->get_extension(0);
+
+  tex->write(ss.str(), 0, 0, true, true);
+}
+
+/**
+ *
+ */
+void MakeTxo::
+run_create() {
+  if (_got_scale) {
+    // We have to adjust this config variable for the texture RAM images to be
+    // correctly scaled when loaded.  We can't scale or change the size of the
+    // texture after loading it; it throws away the RAM images.
+    texture_scale = _scale;
+  }
+
+  PT(Texture) tex = new Texture;
+  switch (_type) {
+  default:
+  case T_2d:
+    tex->setup_2d_texture();
+    break;
+  case T_cube_map:
+    tex->setup_cube_map();
+    break;
+  case T_2d_array:
+    tex->setup_2d_texture_array();
+    break;
+  case T_3d:
+    tex->setup_3d_texture();
+    break;
+  }
+
+  tex->set_keep_ram_image(true);
 
   LoaderOptions opts;
   opts.set_auto_texture_scale(_auto_scale);
@@ -197,43 +247,11 @@ run() {
     LoaderOptions::TF_allow_1d |
     LoaderOptions::TF_preload
   );
-  if (_mipmap) {
-    flags |= LoaderOptions::TF_generate_mipmaps;
-  }
   opts.set_texture_flags(flags);
 
-  switch (_type) {
-  default:
-  case T_2d:
-    tex = TexturePool::load_texture(_input_image, 0, false, opts);
-    break;
-  case T_cube_map:
-    tex = TexturePool::load_cube_map(_input_image, false, opts);
-    break;
-  case T_2d_array:
-    tex = TexturePool::load_2d_texture_array(_input_image, false, opts);
-    break;
-  case T_3d:
-    tex = TexturePool::load_3d_texture(_input_image, false, opts);
-    break;
-  }
-
-  if (!tex) {
+  if (!tex->read(_input_image, opts)) {
     nout << "Couldn't load the input image!\n";
     return;
-  }
-
-  if (_got_x) {
-    tex->set_x_size(_x);
-  }
-
-  if (_got_y) {
-    tex->set_y_size(_y);
-  }
-
-  if (_got_scale) {
-    tex->set_x_size(tex->get_x_size() * _scale);
-    tex->set_y_size(tex->get_y_size() * _scale);
   }
 
   if (_srgb) {
@@ -312,9 +330,17 @@ run() {
 
   tex->set_anisotropic_degree(_anisotropic_degree);
 
-  tex->set_compression(_compression);
+  if (_mipmap) {
+    nout << "Generating mipmaps\n";
+    tex->generate_ram_mipmap_images();
+  }
 
-  tex->reload();
+  if (_compression != Texture::CM_off) {
+    nout << "Applying " << _compression << " compression\n";
+    tex->set_compression(_compression);
+  }
+
+  nassertv(tex->has_ram_image());
 
   nout << "\nTexture info:\n";
   tex->write(nout, 0);

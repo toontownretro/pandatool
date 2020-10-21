@@ -20,6 +20,7 @@
 #include "withOutputFile.h"
 #include "samplerState.h"
 #include "texture.h"
+#include "pnmFileType.h"
 
 /**
  * A program to output a Panda Texture Object from an input image.
@@ -55,6 +56,9 @@ protected:
   virtual bool handle_args(Args &args);
 
 private:
+  void run_create();
+  void run_extract();
+
   static bool dispatch_type(const std::string &opt, const std::string &arg, void *var);
   static bool dispatch_filter(const std::string &opt, const std::string &arg, void *var);
   static bool dispatch_wrap(const std::string &opt, const std::string &arg, void *var);
@@ -62,14 +66,12 @@ private:
   static bool dispatch_auto_scale(const std::string &opt, const std::string &arg, void *var);
 
 private:
+  PNMFileType *_extract_type;
+  bool _got_extract;
   bool _srgb;
   bool _strip_alpha;
   bool _mipmap;
   int _anisotropic_degree;
-  int _x;
-  bool _got_x;
-  int _y;
-  bool _got_y;
   double _scale;
   bool _got_scale;
   Filter _filter_mode;
