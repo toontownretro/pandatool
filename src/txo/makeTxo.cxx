@@ -106,8 +106,9 @@ MakeTxo() : WithOutputFile(true, false, true)
      &MakeTxo::dispatch_filter, nullptr, this);
 
   add_option
-    ("aniso", "", 0,
-     "Specify that the texture should use anisotropic filtering.",
+    ("aniso", "integer", 0,
+     "Specify that the texture should use anisotropic filtering to the "
+     "indicated degree.",
      &MakeTxo::dispatch_filter, nullptr, this);
 
   add_option
