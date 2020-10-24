@@ -29,7 +29,7 @@
     egg:c pandaegg:m \
     linmath:c putil:c panda:m \
     express:c pandaexpress:m \
-    interrogatedb dtoolutil:c dtoolbase:c prc  dtool:m $[if $[WINDOWS_PLATFORM],pystub,] \
+    interrogatedb dtoolutil:c dtoolbase:c prc  dtool:m \
     pipeline:c pnmimage:c
 
   // Irix requires this to be named explicitly.
@@ -50,7 +50,7 @@
     egg:c pandaegg:m \
     linmath:c putil:c panda:m \
     express:c pandaexpress:m \
-    interrogatedb dtoolutil:c dtoolbase:c prc  dtool:m $[if $[WINDOWS_PLATFORM],pystub,] \
+    interrogatedb dtoolutil:c dtoolbase:c prc  dtool:m \
     pipeline:c pnmimage:c
 
   // Irix requires this to be named explicitly.
@@ -63,20 +63,15 @@
 #end bin_target
 
 #begin bin_target
-  #define USE_PACKAGES maya
   #define TARGET maya2egg_client
   #define LOCAL_LIBS \
-    mayabase mayaegg eggbase progbase
+    eggbase progbase
   #define OTHER_LIBS \
     egg:c pandaegg:m \
     linmath:c putil:c panda:m \
     express:c pandaexpress:m \
-    interrogatedb dtoolutil:c dtoolbase:c prc  dtool:m $[if $[WINDOWS_PLATFORM],pystub,] \
+    interrogatedb dtoolutil:c dtoolbase:c prc  dtool:m \
     pipeline:c pnmimage:c
-
-  // Irix requires this to be named explicitly.
-  #define UNIX_SYS_LIBS \
-    ExtensionLayer
 
   #define SOURCES \
     mayaToEgg_client.cxx mayaToEgg_client.h
@@ -101,7 +96,7 @@
     egg:c pandaegg:m \
     linmath:c putil:c panda:m \
     express:c pandaexpress:m \
-    interrogatedb dtoolutil:c dtoolbase:c prc  dtool:m $[if $[WINDOWS_PLATFORM],pystub,] \
+    interrogatedb dtoolutil:c dtoolbase:c prc  dtool:m \
     pipeline:c pnmimage:c
 
   // Irix requires this to be named explicitly.
@@ -124,7 +119,7 @@
     framework:m \
     linmath:c putil:c panda:m \
     express:c pandaexpress:m \
-    interrogatedb dtoolutil:c dtoolbase:c prc  dtool:m $[if $[WINDOWS_PLATFORM],pystub,] \
+    interrogatedb dtoolutil:c dtoolbase:c prc  dtool:m \
     pipeline:c
 
   #define BUILDING_DLL BUILDING_MISC
@@ -164,7 +159,7 @@
     framework:m \
     linmath:c putil:c panda:m \
     express:c pandaexpress:m \
-    interrogatedb dtoolutil:c dtoolbase:c prc  dtool:m $[if $[WINDOWS_PLATFORM],pystub,] \
+    interrogatedb dtoolutil:c dtoolbase:c prc  dtool:m \
     pipeline:c
 
   #define BUILDING_DLL BUILDING_MISC
@@ -188,7 +183,7 @@
     egg2pg:c egg:c pandaegg:m \
     mathutil:c linmath:c putil:c panda:m \
     express:c pandaexpress:m \
-    dtoolconfig dtool \
+    dtool:m \
     event:c gobj:c chan:c pgraph:c parametrics:c char:c prc dtoolutil:c \
     interrogatedb dtoolbase:c collide:c pnmimage:c dgraph:c tform:c \
     pipeline:c pstatclient:c grutil:c gsgbase:c net:c display:c \
