@@ -31,6 +31,18 @@
 #include "load_prc_file.h"
 #include "windowProperties.h"
 #include "frameBufferProperties.h"
+#include "datagramIterator.h"
+#include "datagram.h"
+#include "virtualFileSystem.h"
+
+/**
+ *
+ */
+EggToBam::TxoTexture::
+TxoTexture() {
+  _img_timestamp = 0;
+  _alpha_img_timestamp = 0;
+}
 
 /**
  *
@@ -188,6 +200,13 @@ EggToBam() :
      &EggToBam::dispatch_string, nullptr, &_ctex_quality);
 
   add_option
+    ("txocache", "filename", 0,
+     "Specifies the filename to the .txo cache file.  This is used not not "
+     "write the same .txo file over and over again that is referenced by "
+     "multiple models.",
+     &EggToBam::dispatch_filename, &_got_txo_cache, &_txo_cache);
+
+  add_option
     ("load-display", "display name", 0,
      "Specifies the particular display module to load to perform the texture "
      "compression requested by -ctex.  If this is omitted, the default is "
@@ -271,16 +290,72 @@ run() {
 #endif  // HAVE_SQUISH
   }
 
+  bool cache_modified = false;
+
   if (_tex_txo || _tex_txopz || (_tex_ctex && _tex_rawdata)) {
+    VirtualFileSystem *vfs = VirtualFileSystem::get_global_ptr();
+
+    if ((_tex_txo || _tex_txopz) && _got_txo_cache) {
+      std::cerr << "Loading txo cache " << _txo_cache.get_fullpath() << "\n";
+      _txo_cache.set_binary();
+      vector_uchar data;
+      if (vfs->read_file(_txo_cache, data, true)) {
+        Datagram dg(data);
+        DatagramIterator di(dg);
+
+        uint32_t num_textures = di.get_uint32();
+        for (uint32_t i = 0; i < num_textures; i++) {
+          TxoTexture txo_tex;
+          txo_tex._txo_filename = di.get_string();
+          txo_tex._img_filename = di.get_string();
+          txo_tex._img_timestamp = di.get_uint64();
+          txo_tex._alpha_img_filename = di.get_string();
+          txo_tex._alpha_img_timestamp = di.get_uint64();
+          _txo_textures[txo_tex._txo_filename] = txo_tex;
+        }
+      }
+    }
+
     collect_textures(root);
     Textures::iterator ti;
     for (ti = _textures.begin(); ti != _textures.end(); ++ti) {
       Texture *tex = (*ti);
+
+      if (!_tex_rawdata && !tex->get_loaded_from_txo()) {
+        // Check if we've already written this txo in the past.
+
+        Filename txo_filename = tex->get_fullpath().get_filename_index(0);
+        txo_filename.set_extension(_tex_txopz ? "txo.pz" : "txo");
+        if (_tex_txopz) {
+          // We use this clumsy syntax so that the new extension appears to be two
+          // separate extensions, .txo followed by .pz, which is what
+          // Texture::write() expects to find.
+          txo_filename = Filename(txo_filename.get_fullpath());
+        }
+
+        TxoTextures::const_iterator it = _txo_textures.find(txo_filename);
+        if (it != _txo_textures.end()) {
+          // We have.  If the original image timestamps are the same, there is
+          // no need to write the txo again.
+          const TxoTexture &txo_tex = (*it).second;
+          if (txo_tex._img_timestamp == tex->get_fullpath().get_timestamp() &&
+              txo_tex._alpha_img_timestamp == tex->get_alpha_fullpath().get_timestamp()) {
+            // Everything is the same, don't write a txo.
+            std::cerr << txo_filename.get_fullpath() << " does not need to be rewritten.\n";
+
+            // Just modify the texture to reference the txo instead.
+            set_txo_data(tex, txo_tex);
+
+            continue;
+          }
+        }
+      }
+
       tex->get_ram_image();
       bool want_mipmaps = (_tex_mipmap || tex->uses_mipmaps());
       if (want_mipmaps) {
-  // Generate mipmap levels.
-  tex->generate_ram_mipmap_images();
+        // Generate mipmap levels.
+        tex->generate_ram_mipmap_images();
       }
 
       if (_tex_ctex) {
@@ -291,21 +366,61 @@ run() {
         tex->set_compression(Texture::CM_on);
 #else  // HAVE_SQUISH
         tex->set_keep_ram_image(true);
-  bool has_mipmap_levels = (tex->get_num_ram_mipmap_images() > 1);
+        bool has_mipmap_levels = (tex->get_num_ram_mipmap_images() > 1);
         if (!_engine->extract_texture_data(tex, _gsg)) {
           nout << "  couldn't compress " << tex->get_name() << "\n";
         }
-  if (!has_mipmap_levels && !want_mipmaps) {
-    // Make sure we didn't accidentally introduce mipmap levels by
-    // rendezvousing through the graphics card.
-    tex->clear_ram_mipmap_images();
-  }
+        if (!has_mipmap_levels && !want_mipmaps) {
+          // Make sure we didn't accidentally introduce mipmap levels by
+          // rendezvousing through the graphics card.
+          tex->clear_ram_mipmap_images();
+        }
         tex->set_keep_ram_image(false);
 #endif  // HAVE_SQUISH
       }
 
-      if (_tex_txo || _tex_txopz) {
-        convert_txo(tex);
+      if ((_tex_txo || _tex_txopz) && !tex->get_loaded_from_txo()) {
+        TxoTexture txo_tex;
+        txo_tex._txo_filename = tex->get_fullpath().get_filename_index(0);
+        txo_tex._txo_filename.set_extension(_tex_txopz ? "txo.pz" : "txo");
+        if (_tex_txopz) {
+          // We use this clumsy syntax so that the new extension appears to be two
+          // separate extensions, .txo followed by .pz, which is what
+          // Texture::write() expects to find.
+          txo_tex._txo_filename = Filename(txo_tex._txo_filename.get_fullpath());
+        }
+        txo_tex._img_filename = tex->get_fullpath().get_filename_index(0);
+        txo_tex._img_timestamp = txo_tex._img_filename.get_timestamp();
+        txo_tex._alpha_img_filename = tex->get_alpha_fullpath().get_filename_index(0);
+        txo_tex._alpha_img_timestamp = txo_tex._alpha_img_filename.get_timestamp();
+        _txo_textures[txo_tex._txo_filename] = txo_tex;
+
+        cache_modified = true;
+
+        convert_txo(tex, txo_tex);
+      }
+    }
+
+    if ((_tex_txo || _tex_txopz) && _got_txo_cache && cache_modified) {
+      std::cerr << "Writing txo cache " << _txo_cache.get_fullpath() << "\n";
+      _txo_cache.set_binary();
+
+      Datagram dg;
+      dg.add_uint32(_txo_textures.size());
+
+      for (TxoTextures::const_iterator it = _txo_textures.begin();
+           it != _txo_textures.end(); ++it) {
+        const TxoTexture &tex = (*it).second;
+        dg.add_string(tex._txo_filename.get_fullpath());
+        dg.add_string(tex._img_filename.get_fullpath());
+        dg.add_uint64(tex._img_timestamp);
+        dg.add_string(tex._alpha_img_filename.get_fullpath());
+        dg.add_uint64(tex._alpha_img_timestamp);
+      }
+
+      if (!vfs->write_file(_txo_cache, (const unsigned char *)dg.get_data(),
+                           dg.get_length(), false)) {
+        std::cerr << "Couldn't write txo cache\n";
       }
     }
   }
@@ -398,41 +513,36 @@ collect_textures(const RenderState *state) {
  * to a txo file and updates the Texture object to reference the new file.
  */
 void EggToBam::
-convert_txo(Texture *tex) {
-  if (!tex->get_loaded_from_txo()) {
-    Filename fullpath = tex->get_fullpath().get_filename_index(0);
-    if (_tex_txopz) {
-      fullpath.set_extension("txo.pz");
-      // We use this clumsy syntax so that the new extension appears to be two
-      // separate extensions, .txo followed by .pz, which is what
-      // Texture::write() expects to find.
-      fullpath = Filename(fullpath.get_fullpath());
-    } else {
-      fullpath.set_extension("txo");
+convert_txo(Texture *tex, const TxoTexture &txo_tex) {
+  if (tex->write(txo_tex._txo_filename)) {
+    nout << "  Writing " << txo_tex._txo_filename;
+    if (tex->get_ram_image_compression() != Texture::CM_off) {
+      nout << " (compressed " << tex->get_ram_image_compression() << ")";
     }
-
-    if (tex->write(fullpath)) {
-      nout << "  Writing " << fullpath;
-      if (tex->get_ram_image_compression() != Texture::CM_off) {
-        nout << " (compressed " << tex->get_ram_image_compression() << ")";
-      }
-      nout << "\n";
-      tex->set_loaded_from_txo();
-      tex->set_fullpath(fullpath);
-      tex->clear_alpha_fullpath();
-
-      Filename filename = tex->get_filename().get_filename_index(0);
-      if (_tex_txopz) {
-        filename.set_extension("txo.pz");
-        filename = Filename(filename.get_fullpath());
-      } else {
-        filename.set_extension("txo");
-      }
-
-      tex->set_filename(filename);
-      tex->clear_alpha_filename();
-    }
+    nout << "\n";
+    set_txo_data(tex, txo_tex);
   }
+}
+
+/**
+ * Changes the indicated Texture to reference the .txo file.
+ */
+void EggToBam::
+set_txo_data(Texture *tex, const TxoTexture &txo_tex) {
+  tex->set_loaded_from_txo();
+  tex->set_fullpath(txo_tex._txo_filename);
+  tex->clear_alpha_fullpath();
+
+  Filename filename = tex->get_filename().get_filename_index(0);
+  if (_tex_txopz) {
+    filename.set_extension("txo.pz");
+    filename = Filename(filename.get_fullpath());
+  } else {
+    filename.set_extension("txo");
+  }
+
+  tex->set_filename(filename);
+  tex->clear_alpha_filename();
 }
 
 /**

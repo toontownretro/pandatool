@@ -985,8 +985,8 @@ load_light(const aiLight &light) {
     col = light.mColorDiffuse;
     dlight->set_color(LColor(col.r, col.g, col.b, 1));
 
-    col = light.mColorSpecular;
-    dlight->set_specular_color(LColor(col.r, col.g, col.b, 1));
+    //col = light.mColorSpecular;
+    //dlight->set_specular_color(LColor(col.r, col.g, col.b, 1));
 
     vec = light.mPosition;
     dlight->set_point(LPoint3(vec.x, vec.y, vec.z));
@@ -1002,8 +1002,8 @@ load_light(const aiLight &light) {
     col = light.mColorDiffuse;
     plight->set_color(LColor(col.r, col.g, col.b, 1));
 
-    col = light.mColorSpecular;
-    plight->set_specular_color(LColor(col.r, col.g, col.b, 1));
+    //col = light.mColorSpecular;
+    //plight->set_specular_color(LColor(col.r, col.g, col.b, 1));
 
     vec = light.mPosition;
     plight->set_point(LPoint3(vec.x, vec.y, vec.z));
@@ -1020,8 +1020,8 @@ load_light(const aiLight &light) {
     col = light.mColorDiffuse;
     plight->set_color(LColor(col.r, col.g, col.b, 1));
 
-    col = light.mColorSpecular;
-    plight->set_specular_color(LColor(col.r, col.g, col.b, 1));
+    //col = light.mColorSpecular;
+    //plight->set_specular_color(LColor(col.r, col.g, col.b, 1));
 
     plight->set_attenuation(LVecBase3(light.mAttenuationConstant,
                                        light.mAttenuationLinear,
