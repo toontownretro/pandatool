@@ -21,6 +21,7 @@
 #include "samplerState.h"
 #include "texture.h"
 #include "pnmFileType.h"
+#include "luse.h"
 
 /**
  * A program to output a Panda Texture Object from an input image.
@@ -29,7 +30,7 @@ class MakeTxo : public ProgramBase, public WithOutputFile {
 public:
   MakeTxo();
 
-  void run();
+  bool run();
 
   enum Filter {
     F_nearest_neighbor,
@@ -56,8 +57,8 @@ protected:
   virtual bool handle_args(Args &args);
 
 private:
-  void run_create();
-  void run_extract();
+  bool run_create();
+  bool run_extract();
 
   static bool dispatch_type(const std::string &opt, const std::string &arg, void *var);
   static bool dispatch_filter(const std::string &opt, const std::string &arg, void *var);
@@ -74,11 +75,13 @@ private:
   int _anisotropic_degree;
   double _scale;
   bool _got_scale;
+  LColor _border_color;
+  bool _got_border_color;
   Filter _filter_mode;
   Wrap _wrap_mode;
   Type _type;
   Texture::CompressionMode _compression;
-  Filename _input_image;
+  pvector<Filename> _input_images;
   AutoTextureScale _auto_scale;
 };
 

@@ -37,6 +37,8 @@ MakeTxo() : WithOutputFile(true, false, true)
   _auto_scale = ATS_none;
   _scale = 1.0;
   _got_scale = false;
+  _border_color = LColor(0, 0, 0, 1);
+  _got_border_color = false;
 
   set_program_brief("convert an image for set of images into a .txo file");
   set_program_description
@@ -132,6 +134,12 @@ MakeTxo() : WithOutputFile(true, false, true)
      &MakeTxo::dispatch_wrap, nullptr, &_wrap_mode);
 
   add_option
+    ("bordercolor", "color", 0,
+     "Specify the border wrapping color.  This implies -border.",
+     &MakeTxo::dispatch_color, &_got_border_color,
+     (void *)_border_color.get_data());
+
+  add_option
     ("dxt1", "", 0,
      "Specify that the texture should be compressed using the DXT1 algorithm.  "
      "RGB with optional binary alpha.",
@@ -182,43 +190,54 @@ MakeTxo() : WithOutputFile(true, false, true)
 /**
  *
  */
-void MakeTxo::
+bool MakeTxo::
 run() {
   if (_got_extract && _extract_type) {
-    run_extract();
+    return run_extract();
   } else {
-    run_create();
+    return run_create();
   }
 }
 
 /**
  *
  */
-void MakeTxo::
+bool MakeTxo::
 run_extract() {
-  PT(Texture) tex = TexturePool::load_texture(_input_image);
-  if (!tex) {
-    nout << "Couldn't load input .txo!\n";
-    return;
+  for (size_t i = 0; i < _input_images.size(); i++) {
+    PT(Texture) tex = TexturePool::load_texture(_input_images[i]);
+    if (!tex) {
+      nout << "Couldn't load " << _input_images[i].get_fullpath() << "!\n";
+      return false;
+    }
+
+    std::ostringstream ss;
+    ss << tex->get_name() << "_mip#_page#."
+      << _extract_type->get_extension(0);
+
+    if (!tex->write(ss.str(), 0, 0, true, true)) {
+      nout << "Failed to write " << ss.str() << "\n";
+      return false;
+    }
   }
 
-  std::ostringstream ss;
-  ss << tex->get_name() << "_mip#_page#."
-     << _extract_type->get_extension(0);
-
-  tex->write(ss.str(), 0, 0, true, true);
+  return true;
 }
 
 /**
  *
  */
-void MakeTxo::
+bool MakeTxo::
 run_create() {
   if (_got_scale) {
     // We have to adjust this config variable for the texture RAM images to be
     // correctly scaled when loaded.  We can't scale or change the size of the
     // texture after loading it; it throws away the RAM images.
     texture_scale = _scale;
+  }
+
+  if (_got_border_color) {
+    _wrap_mode = W_border;
   }
 
   PT(Texture) tex = new Texture;
@@ -228,6 +247,10 @@ run_create() {
     tex->setup_2d_texture();
     break;
   case T_cube_map:
+    if (_input_images.size() != 6) {
+      nout << "A cubemap texture requires exactly 6 input images.\n";
+      return false;
+    }
     tex->setup_cube_map();
     break;
   case T_2d_array:
@@ -249,23 +272,40 @@ run_create() {
   );
   opts.set_texture_flags(flags);
 
-  if (!tex->read(_input_image, opts)) {
-    nout << "Couldn't load the input image!\n";
-    return;
+  for (size_t i = 0; i < _input_images.size(); i++) {
+    if (!tex->read(_input_images[i], i, 0, false, false, opts)) {
+      nout << "Couldn't load the input image "
+           << _input_images[i].get_fullpath() << "\n";
+      return false;
+    }
+  }
+
+  if (_strip_alpha) {
+    switch (tex->get_num_components()) {
+    case 4:
+      tex->set_format(Texture::F_rgb);
+      break;
+    case 2:
+      tex->set_format(Texture::F_luminance);
+      break;
+    default:
+      break;
+    }
   }
 
   if (_srgb) {
-    switch (tex->get_format()) {
-    case Texture::F_rgba:
+    switch (tex->get_num_components()) {
+    case 4:
+    default:
       tex->set_format(Texture::F_srgb_alpha);
       break;
-    case Texture::F_rgb:
+    case 3:
       tex->set_format(Texture::F_srgb);
       break;
-    case Texture::F_luminance:
+    case 1:
       tex->set_format(Texture::F_sluminance);
       break;
-    case Texture::F_luminance_alpha:
+    case 2:
       tex->set_format(Texture::F_sluminance_alpha);
       break;
     }
@@ -292,7 +332,7 @@ run_create() {
     tex->set_wrap_u(SamplerState::WM_border_color);
     tex->set_wrap_v(SamplerState::WM_border_color);
     tex->set_wrap_w(SamplerState::WM_border_color);
-    tex->set_border_color(LColor(0, 0, 0, 1));
+    tex->set_border_color(_border_color);
     break;
   }
 
@@ -340,15 +380,19 @@ run_create() {
     tex->set_compression(_compression);
   }
 
-  nassertv(tex->has_ram_image());
+  nassertr(tex->has_ram_image(), false);
 
   nout << "\nTexture info:\n";
   tex->write(nout, 0);
   nout << "\n";
 
   std::ostream &out = get_output();
-  tex->write_txo(out, _output_filename.get_fullpath());
+  if (!tex->write_txo(out, _output_filename.get_fullpath())) {
+    return false;
+  }
   close_output();
+
+  return true;
 }
 
 /**
@@ -361,12 +405,9 @@ handle_args(Args &args) {
     return false;
   }
 
-  if (args.size() > (size_t)1) {
-    nout << "Specify only one input image on the command line.\n";
-    return false;
+  for (size_t i = 0; i < args.size(); i++) {
+    _input_images.push_back(Filename::from_os_specific(args[i]));
   }
-
-  _input_image = Filename::from_os_specific(args[0]);
 
   return true;
 }
@@ -486,6 +527,5 @@ int
 main(int argc, char *argv[]) {
   MakeTxo prog;
   prog.parse_command_line(argc, argv);
-  prog.run();
-  return 0;
+  return prog.run() ? 0 : 1;
 }
