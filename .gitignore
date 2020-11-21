@@ -4,3 +4,10 @@ Makefile
 pp.dep
 /built/
 Opt?-*
+src/configfiles/30_pandatool.prc
+src/vrml/vrmlLexer.cxx
+src/vrml/vrmlParser.cxx
+src/vrml/vrmlParser.h
+src/xfile/xLexer.cxx
+src/xfile/xParser.cxx
+src/xfile/xParser.h
