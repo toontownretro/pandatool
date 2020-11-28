@@ -4,6 +4,13 @@ Makefile
 pp.dep
 /built/
 Opt?-*
+*.sln
+*.vcxproj
+*.vcxproj.user
+.vs
+*.log
+x64
+Win32
 src/configfiles/30_pandatool.prc
 src/vrml/vrmlLexer.cxx
 src/vrml/vrmlParser.cxx
