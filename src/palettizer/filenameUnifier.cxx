@@ -29,8 +29,8 @@ FilenameUnifier::CanonicalFilenames FilenameUnifier::_canonical_filenames;
  */
 void FilenameUnifier::
 set_txa_filename(const Filename &txa_filename) {
-  _txa_filename = txa_filename;
-  _txa_dir = txa_filename.get_dirname();
+  _txa_filename = Filename::from_os_specific(txa_filename);
+  _txa_dir = _txa_filename.get_dirname();
   if (_txa_dir.empty()) {
     _txa_dir = ".";
   }
@@ -47,7 +47,7 @@ set_txa_filename(const Filename &txa_filename) {
  */
 void FilenameUnifier::
 set_rel_dirname(const Filename &rel_dirname) {
-  _rel_dirname = rel_dirname;
+  _rel_dirname = Filename::from_os_specific(rel_dirname);
   if (!_rel_dirname.empty()) {
     make_canonical(_rel_dirname);
   }
@@ -59,6 +59,8 @@ set_rel_dirname(const Filename &rel_dirname) {
  */
 Filename FilenameUnifier::
 make_bam_filename(Filename filename) {
+  filename = Filename::from_os_specific(filename);
+
   make_canonical(filename);
   filename.make_relative_to(_txa_dir);
   return filename;
@@ -70,6 +72,8 @@ make_bam_filename(Filename filename) {
  */
 Filename FilenameUnifier::
 get_bam_filename(Filename filename) {
+  filename = Filename::from_os_specific(filename);
+
   if (!filename.empty()) {
     filename.make_absolute(_txa_dir);
   }
@@ -82,6 +86,8 @@ get_bam_filename(Filename filename) {
  */
 Filename FilenameUnifier::
 make_egg_filename(Filename filename) {
+  filename = Filename::from_os_specific(filename);
+
   if (!filename.empty()) {
     make_canonical(filename);
     filename.make_relative_to(_rel_dirname);
@@ -95,6 +101,8 @@ make_egg_filename(Filename filename) {
  */
 Filename FilenameUnifier::
 make_user_filename(Filename filename) {
+  filename = Filename::from_os_specific(filename);
+
   if (!filename.empty()) {
     make_canonical(filename);
     filename.make_relative_to(ExecutionEnvironment::get_cwd());
@@ -109,6 +117,8 @@ make_user_filename(Filename filename) {
  */
 void FilenameUnifier::
 make_canonical(Filename &filename) {
+  filename = Filename::from_os_specific(filename);
+
   if (filename.empty()) {
     return;
   }
