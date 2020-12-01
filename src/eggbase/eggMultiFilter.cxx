@@ -82,13 +82,8 @@ handle_args(ProgramBase::Args &args) {
       return false;
     }
     std::string line;
-    // File should be a space-delimited list of egg files
-    while (std::getline(input, line, ' ')) {
-      // Check for a newline and remove it.
-      size_t pos = line.find("\n");
-      if (pos != std::string::npos) {
-        line.erase(pos, 1);
-      }
+    // File should be a newline-delimited list of egg files
+    while (std::getline(input, line)) {
       args.push_back(line);
     }
   }
