@@ -1,5 +1,5 @@
 
-#include "cvsCopy.cxx"
-#include "cvsSourceDirectory.cxx"
-#include "cvsSourceTree.cxx"
+#include "scmCopy.cxx"
+#include "scmSourceDirectory.cxx"
+#include "scmSourceTree.cxx"
 

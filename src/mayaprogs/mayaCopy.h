@@ -15,7 +15,7 @@
 #define MAYACOPY_H
 
 #include "pandatoolbase.h"
-#include "cvsCopy.h"
+#include "scmCopy.h"
 #include "mayaApi.h"
 #include "dSearchPath.h"
 #include "pointerTo.h"
@@ -32,9 +32,9 @@ class MayaShader;
 class MayaShaderColorDef;
 
 /**
- * A program to copy Maya .mb files into the cvs tree.
+ * A program to copy Maya .mb files into a SCM tree.
  */
-class MayaCopy : public CVSCopy {
+class MayaCopy : public SCMCopy {
 public:
   MayaCopy();
 
@@ -42,7 +42,7 @@ public:
 
 protected:
   virtual bool copy_file(const Filename &source, const Filename &dest,
-                         CVSSourceDirectory *dir, void *extra_data,
+                         SCMSourceDirectory *dir, void *extra_data,
                          bool new_file);
 
   virtual std::string filter_filename(const std::string &source);
@@ -60,10 +60,10 @@ private:
   };
 
   bool copy_maya_file(const Filename &source, const Filename &dest,
-                     CVSSourceDirectory *dir);
-  bool extract_texture(MayaShaderColorDef &color_def, CVSSourceDirectory *dir);
+                     SCMSourceDirectory *dir);
+  bool extract_texture(MayaShaderColorDef &color_def, SCMSourceDirectory *dir);
   bool copy_texture(const Filename &source, const Filename &dest,
-                    CVSSourceDirectory *dir);
+                    SCMSourceDirectory *dir);
 
   bool collect_shaders();
   bool collect_shader_for_node(const MDagPath &dag_path);

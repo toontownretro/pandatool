@@ -121,7 +121,7 @@
 #begin bin_target
   #define USE_PACKAGES maya
   #define TARGET mayacopy_bin
-  #define LOCAL_LIBS cvscopy mayabase progbase
+  #define LOCAL_LIBS scmcopy mayabase progbase
 
   #define OTHER_LIBS \
     egg:c pandaegg:m \

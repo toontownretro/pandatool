@@ -6,13 +6,13 @@
  * license.  You should have received a copy of this license along
  * with this source code in a file named "LICENSE."
  *
- * @file cvsSourceDirectory.cxx
+ * @file scmSourceDirectory.cxx
  * @author drose
  * @date 2000-10-31
  */
 
-#include "cvsSourceDirectory.h"
-#include "cvsSourceTree.h"
+#include "scmSourceDirectory.h"
+#include "scmSourceTree.h"
 #include "string_utils.h"
 
 #include "pnotify.h"
@@ -22,8 +22,8 @@ using std::string;
 /**
  *
  */
-CVSSourceDirectory::
-CVSSourceDirectory(CVSSourceTree *tree, CVSSourceDirectory *parent,
+SCMSourceDirectory::
+SCMSourceDirectory(SCMSourceTree *tree, SCMSourceDirectory *parent,
                    const string &dirname) :
   _tree(tree),
   _parent(parent),
@@ -39,8 +39,8 @@ CVSSourceDirectory(CVSSourceTree *tree, CVSSourceDirectory *parent,
 /**
  *
  */
-CVSSourceDirectory::
-~CVSSourceDirectory() {
+SCMSourceDirectory::
+~SCMSourceDirectory() {
   Children::iterator ci;
   for (ci = _children.begin(); ci != _children.end(); ++ci) {
     delete (*ci);
@@ -50,7 +50,7 @@ CVSSourceDirectory::
 /**
  * Returns the local name of this particular directory.
  */
-string CVSSourceDirectory::
+string SCMSourceDirectory::
 get_dirname() const {
   return _dirname;
 }
@@ -58,7 +58,7 @@ get_dirname() const {
 /**
  * Returns the full pathname to this particular directory.
  */
-Filename CVSSourceDirectory::
+Filename SCMSourceDirectory::
 get_fullpath() const {
   if (_parent == nullptr) {
     return _tree->get_root_fullpath();
@@ -70,7 +70,7 @@ get_fullpath() const {
  * Returns the relative pathname to this particular directory, as seen from
  * the root of the tree.
  */
-Filename CVSSourceDirectory::
+Filename SCMSourceDirectory::
 get_path() const {
   if (_parent == nullptr) {
     return _dirname;
@@ -82,10 +82,10 @@ get_path() const {
  * Returns the relative path to the other directory from this one.  This does
  * not include a trailing slash.
  */
-Filename CVSSourceDirectory::
-get_rel_to(const CVSSourceDirectory *other) const {
-  const CVSSourceDirectory *a = this;
-  const CVSSourceDirectory *b = other;
+Filename SCMSourceDirectory::
+get_rel_to(const SCMSourceDirectory *other) const {
+  const SCMSourceDirectory *a = this;
+  const SCMSourceDirectory *b = other;
 
   if (a == b) {
     return ".";
@@ -121,7 +121,7 @@ get_rel_to(const CVSSourceDirectory *other) const {
 /**
  * Returns the number of subdirectories below this directory.
  */
-int CVSSourceDirectory::
+int SCMSourceDirectory::
 get_num_children() const {
   return _children.size();
 }
@@ -129,7 +129,7 @@ get_num_children() const {
 /**
  * Returns the nth subdirectory below this directory.
  */
-CVSSourceDirectory *CVSSourceDirectory::
+SCMSourceDirectory *SCMSourceDirectory::
 get_child(int n) const {
   nassertr(n >= 0 && n < (int)_children.size(), nullptr);
   return _children[n];
@@ -139,7 +139,7 @@ get_child(int n) const {
  * Returns the source directory that corresponds to the given relative path
  * from this directory, or NULL if there is no match.
  */
-CVSSourceDirectory *CVSSourceDirectory::
+SCMSourceDirectory *SCMSourceDirectory::
 find_relpath(const string &relpath) {
   if (relpath.empty()) {
     return this;
@@ -179,7 +179,7 @@ find_relpath(const string &relpath) {
  * Returns the source directory that corresponds to the given local directory
  * name, or NULL if there is no match.
  */
-CVSSourceDirectory *CVSSourceDirectory::
+SCMSourceDirectory *SCMSourceDirectory::
 find_dirname(const string &dirname) {
   if (cmp_nocase(dirname, _dirname) == 0) {
     return this;
@@ -187,7 +187,7 @@ find_dirname(const string &dirname) {
 
   Children::const_iterator ci;
   for (ci = _children.begin(); ci != _children.end(); ++ci) {
-    CVSSourceDirectory *result = (*ci)->find_dirname(dirname);
+    SCMSourceDirectory *result = (*ci)->find_dirname(dirname);
     if (result != nullptr) {
       return result;
     }
@@ -202,7 +202,7 @@ find_dirname(const string &dirname) {
  * must exist in each subdirectory for it to be considered part of the
  * hierarchy.  Returns true on success, false on failure.
  */
-bool CVSSourceDirectory::
+bool SCMSourceDirectory::
 scan(const Filename &directory, const string &key_filename) {
   vector_string contents;
   if (!directory.scan_directory(contents)) {
@@ -219,8 +219,8 @@ scan(const Filename &directory, const string &key_filename) {
     Filename key(next_path, key_filename);
 
     if (key.exists()) {
-      CVSSourceDirectory *subdir =
-        new CVSSourceDirectory(_tree, this, basename);
+      SCMSourceDirectory *subdir =
+        new SCMSourceDirectory(_tree, this, basename);
       _children.push_back(subdir);
 
       if (!subdir->scan(next_path, key_filename)) {

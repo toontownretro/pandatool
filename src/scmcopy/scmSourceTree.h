@@ -6,13 +6,13 @@
  * license.  You should have received a copy of this license along
  * with this source code in a file named "LICENSE."
  *
- * @file cvsSourceTree.h
+ * @file scmSourceTree.h
  * @author drose
  * @date 2000-10-31
  */
 
-#ifndef CVSSOURCETREE_H
-#define CVSSOURCETREE_H
+#ifndef SCMSOURCETREE_H
+#define SCMSOURCETREE_H
 
 #include "pandatoolbase.h"
 
@@ -20,29 +20,29 @@
 #include "pmap.h"
 #include "filename.h"
 
-class CVSSourceDirectory;
+class SCMSourceDirectory;
 
 /**
  * This represents the root of the tree of source directory files.
  *
  * The tree is maintained in a case-insensitive manner, even on a non-Windows
- * system, since you might want to eventually check out the CVS tree onto a
+ * system, since you might want to eventually check out the SCM tree onto a
  * Windows system--and if you do, you'll be sad if there are case conflicts
  * within the tree.  So we make an effort to ensure this doesn't happen by
  * treating two files with a different case as the same file.
  */
-class CVSSourceTree {
+class SCMSourceTree {
 public:
-  CVSSourceTree();
-  ~CVSSourceTree();
+  SCMSourceTree();
+  ~SCMSourceTree();
 
   void set_root(const Filename &root_path);
   bool scan(const Filename &key_filename);
 
-  CVSSourceDirectory *get_root() const;
-  CVSSourceDirectory *find_directory(const Filename &path);
-  CVSSourceDirectory *find_relpath(const std::string &relpath);
-  CVSSourceDirectory *find_dirname(const std::string &dirname);
+  SCMSourceDirectory *get_root() const;
+  SCMSourceDirectory *find_directory(const Filename &path);
+  SCMSourceDirectory *find_relpath(const std::string &relpath);
+  SCMSourceDirectory *find_dirname(const std::string &dirname);
 
   // This nested class represents the selection of a particular directory in
   // which to place a given file, given its basename.  The basename of the
@@ -52,18 +52,18 @@ public:
   class FilePath {
   public:
     FilePath();
-    FilePath(CVSSourceDirectory *dir, const std::string &basename);
+    FilePath(SCMSourceDirectory *dir, const std::string &basename);
     bool is_valid() const;
     Filename get_path() const;
     Filename get_fullpath() const;
-    Filename get_rel_from(const CVSSourceDirectory *other) const;
+    Filename get_rel_from(const SCMSourceDirectory *other) const;
 
-    CVSSourceDirectory *_dir;
+    SCMSourceDirectory *_dir;
     std::string _basename;
   };
 
   FilePath choose_directory(const std::string &basename,
-                            CVSSourceDirectory *suggested_dir,
+                            SCMSourceDirectory *suggested_dir,
                             bool force, bool interactive);
 
   Filename get_root_fullpath();
@@ -73,19 +73,19 @@ public:
   static void restore_cwd();
 
 public:
-  void add_file(const std::string &basename, CVSSourceDirectory *dir);
+  void add_file(const std::string &basename, SCMSourceDirectory *dir);
 
 private:
   typedef pvector<FilePath> FilePaths;
 
   FilePath
-  prompt_user(const std::string &basename, CVSSourceDirectory *suggested_dir,
+  prompt_user(const std::string &basename, SCMSourceDirectory *suggested_dir,
               const FilePaths &paths, bool force, bool interactive);
 
   FilePath ask_existing(const std::string &filename, const FilePath &path);
   FilePath ask_existing(const std::string &filename, const FilePaths &paths,
-                        CVSSourceDirectory *suggested_dir);
-  FilePath ask_new(const std::string &filename, CVSSourceDirectory *dir);
+                        SCMSourceDirectory *suggested_dir);
+  FilePath ask_new(const std::string &filename, SCMSourceDirectory *dir);
   FilePath ask_any(const std::string &filename, const FilePaths &paths);
 
   std::string prompt(const std::string &message);
@@ -95,7 +95,7 @@ private:
 
 private:
   Filename _path;
-  CVSSourceDirectory *_root;
+  SCMSourceDirectory *_root;
 
   typedef pmap<std::string, FilePaths> Basenames;
   Basenames _basenames;

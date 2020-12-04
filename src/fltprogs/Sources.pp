@@ -10,7 +10,7 @@
 
 #begin bin_target
   #define TARGET fltcopy
-  #define LOCAL_LIBS cvscopy flt
+  #define LOCAL_LIBS scmcopy flt
 
   #define SOURCES \
     fltCopy.cxx fltCopy.h

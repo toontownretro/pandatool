@@ -15,7 +15,7 @@
 
 #include "mayaCopy.h"
 #include "config_maya.h"
-#include "cvsSourceDirectory.h"
+#include "scmSourceDirectory.h"
 #include "dcast.h"
 
 #include "pre_maya_include.h"
@@ -41,10 +41,10 @@ using std::string;
  */
 MayaCopy::
 MayaCopy() {
-  set_program_brief("copy Maya .mb files into a CVS source hierarchy");
+  set_program_brief("copy Maya .mb files into a SCM source hierarchy");
   set_program_description
     ("mayacopy copies one or more Maya .mb files into a "
-     "CVS source hierarchy.  "
+     "SCM source hierarchy.  "
      "Rather than copying the named files immediately into the current "
      "directory, it first scans the entire source hierarchy, identifying all "
      "the already-existing files.  If the named file to copy matches the "
@@ -60,32 +60,32 @@ MayaCopy() {
     ("keepver", "", 0,
      "Don't attempt to strip the Maya version number from the tail of the "
      "source filename before it is copied into the tree.",
-     &CVSCopy::dispatch_none, &_keep_ver);
+     &SCMCopy::dispatch_none, &_keep_ver);
 
   /*
   add_option
     ("rp", "replace_prefix", 80,
      "use these prefixes when replacing reference with the recently copied file from the  "
      "source filename before it is copied into the tree.",
-     &CVSCopy::dispatch_vector_string, NULL, &_replace_prefix);
+     &SCMCopy::dispatch_vector_string, NULL, &_replace_prefix);
   */
 
   add_option
     ("omittex", "", 0,
      "Character animation files do not need to copy the texures. "
      "This option omits the textures of the models to be re-mayacopied",
-     &CVSCopy::dispatch_none, &_omit_tex);
+     &SCMCopy::dispatch_none, &_omit_tex);
 
   add_option
     ("omitref", "", 0,
      "Character animation files do not need to copy internal file references. "
      "This option omits the references of the models to be re-mayacopied",
-     &CVSCopy::dispatch_none, &_omit_ref);
+     &SCMCopy::dispatch_none, &_omit_ref);
 
   add_option
     ("ma", "", 0,
      "Write a .ma file instead of a .mb file (regardless of input type)",
-     &CVSCopy::dispatch_none, &_maya_ascii);
+     &SCMCopy::dispatch_none, &_maya_ascii);
 
   add_path_replace_options();
 }
@@ -107,7 +107,7 @@ run() {
     ExtraData ed;
     ed._type = FT_maya;
 
-    CVSSourceTree::FilePath path = import(*fi, &ed, _model_dir);
+    SCMSourceTree::FilePath path = import(*fi, &ed, _model_dir);
     if (!path.is_valid()) {
       nout << "\nUnable to copy, aborting!\n\n";
       exit(1);
@@ -122,7 +122,7 @@ run() {
  */
 bool MayaCopy::
 copy_file(const Filename &source, const Filename &dest,
-          CVSSourceDirectory *dir, void *extra_data, bool new_file) {
+          SCMSourceDirectory *dir, void *extra_data, bool new_file) {
   ExtraData *ed = (ExtraData *)extra_data;
   switch (ed->_type) {
   case FT_maya:
@@ -181,7 +181,7 @@ filter_filename(const string &source) {
  */
 bool MayaCopy::
 copy_maya_file(const Filename &source, const Filename &dest,
-               CVSSourceDirectory *dir) {
+               SCMSourceDirectory *dir) {
   if (!_maya->read(source)) {
     maya_cat.error()
       << "Unable to read " << source << "\n";
@@ -232,13 +232,13 @@ copy_maya_file(const Filename &source, const Filename &dest,
     Filename filename =
       _path_replace->convert_path(Filename::from_os_specific(lookup));
 
-    CVSSourceTree::FilePath path =
+    SCMSourceTree::FilePath path =
       _tree.choose_directory(filename.get_basename(), dir, _force, _interactive);
     Filename new_filename = path.get_rel_from(dir);
 
     if (maya_cat.is_spam()) {
-      maya_cat.spam() << "cvs dir " << dir->get_fullpath().to_os_generic() << endl;
-      maya_cat.spam() << "cvs path " << path.get_fullpath().to_os_generic() << endl;
+      maya_cat.spam() << "scm dir " << dir->get_fullpath().to_os_generic() << endl;
+      maya_cat.spam() << "scm path " << path.get_fullpath().to_os_generic() << endl;
     }
     MString result2;
 
@@ -304,7 +304,7 @@ copy_maya_file(const Filename &source, const Filename &dest,
     ExtraData ed;
     ed._type = FT_maya;
 
-    CVSSourceTree::FilePath path = import(filename, &ed, _model_dir);
+    SCMSourceTree::FilePath path = import(filename, &ed, _model_dir);
     if (!path.is_valid()) {
       exit(1);
     }
@@ -319,7 +319,7 @@ copy_maya_file(const Filename &source, const Filename &dest,
  * success, false on failure.
  */
 bool MayaCopy::
-extract_texture(MayaShaderColorDef &color_def, CVSSourceDirectory *dir) {
+extract_texture(MayaShaderColorDef &color_def, SCMSourceDirectory *dir) {
   Filename texture_filename =
     _path_replace->convert_path(color_def._texture_filename);
   if (!texture_filename.exists()) {
@@ -334,7 +334,7 @@ extract_texture(MayaShaderColorDef &color_def, CVSSourceDirectory *dir) {
     ExtraData ed;
     ed._type = FT_texture;
 
-    CVSSourceTree::FilePath texture_path =
+    SCMSourceTree::FilePath texture_path =
       import(texture_filename, &ed, _map_dir);
 
     if (!texture_path.is_valid()) {
@@ -355,7 +355,7 @@ extract_texture(MayaShaderColorDef &color_def, CVSSourceDirectory *dir) {
  */
 bool MayaCopy::
 copy_texture(const Filename &source, const Filename &dest,
-             CVSSourceDirectory *dir) {
+             SCMSourceDirectory *dir) {
   if (!copy_binary_file(source, dest)) {
     return false;
   }

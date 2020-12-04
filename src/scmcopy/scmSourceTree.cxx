@@ -6,13 +6,13 @@
  * license.  You should have received a copy of this license along
  * with this source code in a file named "LICENSE."
  *
- * @file cvsSourceTree.cxx
+ * @file scmSourceTree.cxx
  * @author drose
  * @date 2000-10-31
  */
 
-#include "cvsSourceTree.h"
-#include "cvsSourceDirectory.h"
+#include "scmSourceTree.h"
+#include "scmSourceDirectory.h"
 
 #include "filename.h"
 #include "executionEnvironment.h"
@@ -30,14 +30,14 @@
 
 using std::string;
 
-bool CVSSourceTree::_got_start_fullpath = false;
-Filename CVSSourceTree::_start_fullpath;
+bool SCMSourceTree::_got_start_fullpath = false;
+Filename SCMSourceTree::_start_fullpath;
 
 /**
  *
  */
-CVSSourceTree::
-CVSSourceTree() {
+SCMSourceTree::
+SCMSourceTree() {
   _root = nullptr;
   _got_root_fullpath = false;
 }
@@ -45,8 +45,8 @@ CVSSourceTree() {
 /**
  *
  */
-CVSSourceTree::
-~CVSSourceTree() {
+SCMSourceTree::
+~SCMSourceTree() {
   if (_root != nullptr) {
     delete _root;
   }
@@ -56,7 +56,7 @@ CVSSourceTree::
  * Sets the root of the source directory.  This must be called before scan(),
  * and should not be called more than once.
  */
-void CVSSourceTree::
+void SCMSourceTree::
 set_root(const Filename &root_path) {
   nassertv(_path.empty());
   _path = root_path;
@@ -67,18 +67,18 @@ set_root(const Filename &root_path) {
  * is an error to call this more than once.  Returns true on success, false if
  * there is an error.
  */
-bool CVSSourceTree::
+bool SCMSourceTree::
 scan(const Filename &key_filename) {
   nassertr(_root == nullptr, false);
   Filename root_fullpath = get_root_fullpath();
-  _root = new CVSSourceDirectory(this, nullptr, root_fullpath.get_basename());
+  _root = new SCMSourceDirectory(this, nullptr, root_fullpath.get_basename());
   return _root->scan(_path, key_filename);
 }
 
 /**
  * Returns the root directory of the hierarchy.
  */
-CVSSourceDirectory *CVSSourceTree::
+SCMSourceDirectory *SCMSourceTree::
 get_root() const {
   return _root;
 }
@@ -87,7 +87,7 @@ get_root() const {
  * Returns the source directory that corresponds to the given path, or NULL if
  * there is no such directory in the source tree.
  */
-CVSSourceDirectory *CVSSourceTree::
+SCMSourceDirectory *SCMSourceTree::
 find_directory(const Filename &path) {
   string root_fullpath = get_root_fullpath();
   string fullpath = get_actual_fullpath(path);
@@ -111,9 +111,9 @@ find_directory(const Filename &path) {
  * from the root, or NULL if there is no match.  The relative path may or may
  * not include the name of the root directory itself.
  */
-CVSSourceDirectory *CVSSourceTree::
+SCMSourceDirectory *SCMSourceTree::
 find_relpath(const string &relpath) {
-  CVSSourceDirectory *result = _root->find_relpath(relpath);
+  SCMSourceDirectory *result = _root->find_relpath(relpath);
   if (result != nullptr) {
     return result;
   }
@@ -138,7 +138,7 @@ find_relpath(const string &relpath) {
  * Returns the source directory that corresponds to the given local directory
  * name, or NULL if there is no match.
  */
-CVSSourceDirectory *CVSSourceTree::
+SCMSourceDirectory *SCMSourceTree::
 find_dirname(const string &dirname) {
   return _root->find_dirname(dirname);
 }
@@ -149,8 +149,8 @@ find_dirname(const string &dirname) {
  * name; if a matching model is not found, or if multiple matching files are
  * found, prompts the user for the directory, or uses suggested_dir.
  */
-CVSSourceTree::FilePath CVSSourceTree::
-choose_directory(const string &basename, CVSSourceDirectory *suggested_dir,
+SCMSourceTree::FilePath SCMSourceTree::
+choose_directory(const string &basename, SCMSourceDirectory *suggested_dir,
                  bool force, bool interactive) {
   static FilePaths empty_paths;
 
@@ -172,7 +172,7 @@ choose_directory(const string &basename, CVSSourceDirectory *suggested_dir,
 /**
  * Returns the full path from the root to the top of the source hierarchy.
  */
-Filename CVSSourceTree::
+Filename SCMSourceTree::
 get_root_fullpath() {
   nassertr(!_path.empty(), Filename());
   if (!_got_root_fullpath) {
@@ -185,7 +185,7 @@ get_root_fullpath() {
 /**
  * Returns the local directory name of the root of the tree.
  */
-Filename CVSSourceTree::
+Filename SCMSourceTree::
 get_root_dirname() const {
   nassertr(_root != nullptr, Filename());
   return _root->get_dirname();
@@ -193,10 +193,10 @@ get_root_dirname() const {
 
 /**
  * Adds a new file to the set of known files.  This is normally called from
- * CVSSourceDirectory::scan() and should not be called directly by the user.
+ * SCMSourceDirectory::scan() and should not be called directly by the user.
  */
-void CVSSourceTree::
-add_file(const string &basename, CVSSourceDirectory *dir) {
+void SCMSourceTree::
+add_file(const string &basename, SCMSourceDirectory *dir) {
   FilePath file_path(dir, basename);
   _basenames[downcase(basename)].push_back(file_path);
 }
@@ -206,7 +206,7 @@ add_file(const string &basename, CVSSourceDirectory *dir) {
  * on success, false on failure.  Call restore_cwd() to restore to the
  * original directory later.
  */
-bool CVSSourceTree::
+bool SCMSourceTree::
 temp_chdir(const Filename &path) {
   // We have to call this first to guarantee that we have already determined
   // our starting directory.
@@ -222,7 +222,7 @@ temp_chdir(const Filename &path) {
 /**
  * Restores the current directory after changing it from temp_chdir().
  */
-void CVSSourceTree::
+void SCMSourceTree::
 restore_cwd() {
   Filename start_fullpath = get_start_fullpath();
   string os_path = start_fullpath.to_os_specific();
@@ -240,9 +240,9 @@ restore_cwd() {
  * Prompts the user, if necessary, to choose a directory to import the given
  * file into.
  */
-CVSSourceTree::FilePath CVSSourceTree::
-prompt_user(const string &basename, CVSSourceDirectory *suggested_dir,
-            const CVSSourceTree::FilePaths &paths,
+SCMSourceTree::FilePath SCMSourceTree::
+prompt_user(const string &basename, SCMSourceDirectory *suggested_dir,
+            const SCMSourceTree::FilePaths &paths,
             bool force, bool interactive) {
   if (paths.size() == 1) {
     // The file already exists in exactly one place.
@@ -296,8 +296,8 @@ prompt_user(const string &basename, CVSSourceDirectory *suggested_dir,
 /**
  * Asks the user if he wants to replace an existing file.
  */
-CVSSourceTree::FilePath CVSSourceTree::
-ask_existing(const string &basename, const CVSSourceTree::FilePath &path) {
+SCMSourceTree::FilePath SCMSourceTree::
+ask_existing(const string &basename, const SCMSourceTree::FilePath &path) {
   while (true) {
     nout << basename << " found in tree at "
          << path.get_path() << ".\n";
@@ -318,9 +318,9 @@ ask_existing(const string &basename, const CVSSourceTree::FilePath &path) {
 /**
  * Asks the user which of several existing files he wants to replace.
  */
-CVSSourceTree::FilePath CVSSourceTree::
-ask_existing(const string &basename, const CVSSourceTree::FilePaths &paths,
-             CVSSourceDirectory *suggested_dir) {
+SCMSourceTree::FilePath SCMSourceTree::
+ask_existing(const string &basename, const SCMSourceTree::FilePaths &paths,
+             SCMSourceDirectory *suggested_dir) {
   while (true) {
     nout << basename << " found in tree at more than one place:\n";
 
@@ -374,8 +374,8 @@ ask_existing(const string &basename, const CVSSourceTree::FilePaths &paths,
 /**
  * Asks the user if he wants to create a new file.
  */
-CVSSourceTree::FilePath CVSSourceTree::
-ask_new(const string &basename, CVSSourceDirectory *dir) {
+SCMSourceTree::FilePath SCMSourceTree::
+ask_new(const string &basename, SCMSourceDirectory *dir) {
   while (true) {
     nout << basename << " will be created in "
          << dir->get_path() << ".\n";
@@ -397,9 +397,9 @@ ask_new(const string &basename, CVSSourceDirectory *dir) {
  * Asks the user to type in the name of the directory in which to store the
  * file.
  */
-CVSSourceTree::FilePath CVSSourceTree::
+SCMSourceTree::FilePath SCMSourceTree::
 ask_any(const string &basename,
-        const CVSSourceTree::FilePaths &paths) {
+        const SCMSourceTree::FilePaths &paths) {
   while (true) {
     string result =
       prompt("Enter the name of the directory to copy " + basename + " to: ");
@@ -408,7 +408,7 @@ ask_any(const string &basename,
     // The user might enter a fully-qualified path to the directory, or a
     // relative path from the root (with or without the root's dirname), or
     // the dirname of the particular directory.
-    CVSSourceDirectory *dir = find_directory(result);
+    SCMSourceDirectory *dir = find_directory(result);
     if (dir == nullptr) {
       dir = find_relpath(result);
     }
@@ -438,7 +438,7 @@ ask_any(const string &basename,
  * Issues a prompt to the user and waits for a typed response.  Returns the
  * response (which will not be empty).
  */
-string CVSSourceTree::
+string SCMSourceTree::
 prompt(const string &message) {
   nout << std::flush;
   while (true) {
@@ -466,7 +466,7 @@ prompt(const string &message) {
 /**
  * Determines the actual full path from the root to the named directory.
  */
-Filename CVSSourceTree::
+Filename SCMSourceTree::
 get_actual_fullpath(const Filename &path) {
   Filename canon = path;
   canon.make_canonical();
@@ -478,7 +478,7 @@ get_actual_fullpath(const Filename &path) {
  * Returns the full path from the root to the directory in which the user
  * started the program.
  */
-Filename CVSSourceTree::
+Filename SCMSourceTree::
 get_start_fullpath() {
   if (!_got_start_fullpath) {
     Filename cwd = ExecutionEnvironment::get_cwd();
@@ -491,7 +491,7 @@ get_start_fullpath() {
 /**
  * Creates an invalid FilePath specification.
  */
-CVSSourceTree::FilePath::
+SCMSourceTree::FilePath::
 FilePath() :
   _dir(nullptr)
 {
@@ -501,8 +501,8 @@ FilePath() :
  * Creates a valid FilePath specification with the indicated directory and
  * basename.
  */
-CVSSourceTree::FilePath::
-FilePath(CVSSourceDirectory *dir, const string &basename) :
+SCMSourceTree::FilePath::
+FilePath(SCMSourceDirectory *dir, const string &basename) :
   _dir(dir),
   _basename(basename)
 {
@@ -512,7 +512,7 @@ FilePath(CVSSourceDirectory *dir, const string &basename) :
  * Returns true if this FilePath represents a valid file, or false if it
  * represents an error return.
  */
-bool CVSSourceTree::FilePath::
+bool SCMSourceTree::FilePath::
 is_valid() const {
   return (_dir != nullptr);
 }
@@ -520,7 +520,7 @@ is_valid() const {
 /**
  * Returns the relative path to this file from the root of the source tree.
  */
-Filename CVSSourceTree::FilePath::
+Filename SCMSourceTree::FilePath::
 get_path() const {
   nassertr(_dir != nullptr, Filename());
   return Filename(_dir->get_path(), _basename);
@@ -529,7 +529,7 @@ get_path() const {
 /**
  * Returns the full path to this file.
  */
-Filename CVSSourceTree::FilePath::
+Filename SCMSourceTree::FilePath::
 get_fullpath() const {
   nassertr(_dir != nullptr, Filename());
   return Filename(_dir->get_fullpath(), _basename);
@@ -539,8 +539,8 @@ get_fullpath() const {
  * Returns the relative path to this file as seen from the indicated source
  * directory.
  */
-Filename CVSSourceTree::FilePath::
-get_rel_from(const CVSSourceDirectory *other) const {
+Filename SCMSourceTree::FilePath::
+get_rel_from(const SCMSourceDirectory *other) const {
   nassertr(_dir != nullptr, Filename());
   return Filename(other->get_rel_to(_dir), _basename);
 }

@@ -16,7 +16,7 @@
 
 #include "pandatoolbase.h"
 
-#include "cvsCopy.h"
+#include "scmCopy.h"
 
 #include "dSearchPath.h"
 #include "pointerTo.h"
@@ -28,10 +28,10 @@ class FltTexture;
 class FltExternalReference;
 
 /**
- * A program to copy Multigen .flt files into the cvs tree.  It copies the
+ * A program to copy Multigen .flt files into a SCM tree.  It copies the
  * base file plus all externally referenced files as well as all textures.
  */
-class FltCopy : public CVSCopy {
+class FltCopy : public SCMCopy {
 public:
   FltCopy();
 
@@ -39,7 +39,7 @@ public:
 
 protected:
   virtual bool copy_file(const Filename &source, const Filename &dest,
-                         CVSSourceDirectory *dir, void *extra_data,
+                         SCMSourceDirectory *dir, void *extra_data,
                          bool new_file);
 
 private:
@@ -55,9 +55,9 @@ private:
   };
 
   bool copy_flt_file(const Filename &source, const Filename &dest,
-                     CVSSourceDirectory *dir);
+                     SCMSourceDirectory *dir);
   bool copy_texture(const Filename &source, const Filename &dest,
-                    CVSSourceDirectory *dir, FltTexture *tex,
+                    SCMSourceDirectory *dir, FltTexture *tex,
                     bool new_file);
 
 

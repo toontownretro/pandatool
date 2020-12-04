@@ -12,23 +12,23 @@
  */
 
 #include "testCopy.h"
-#include "cvsSourceDirectory.h"
+#include "scmSourceDirectory.h"
 
 /**
  *
  */
 TestCopy::
 TestCopy() {
-  set_program_brief("copy files into a CVS source hierarchy");
+  set_program_brief("copy files into a SCM source hierarchy");
   set_program_description
-    ("This program copies one or more files into a CVS source hierarchy.  "
+    ("This program copies one or more files into a SCM source hierarchy.  "
      "Rather than copying the named files immediately into the current "
      "directory, it first scans the entire source hierarchy, identifying all "
      "the already-existing files.  If the named file to copy matches the "
      "name of an already-existing file in the current directory or elsewhere "
      "in the hierarchy, that file is overwritten.\n\n"
 
-     "This is primarily useful as a test program for libcvscopy.");
+     "This is primarily useful as a test program for libscmcopy.");
 }
 
 /**
@@ -38,7 +38,7 @@ void TestCopy::
 run() {
   SourceFiles::iterator fi;
   for (fi = _source_files.begin(); fi != _source_files.end(); ++fi) {
-    CVSSourceDirectory *dest = import(*fi, 0, _model_dir);
+    SCMSourceDirectory *dest = import(*fi, 0, _model_dir);
     if (dest == nullptr) {
       exit(1);
     }
@@ -52,7 +52,7 @@ run() {
  */
 bool TestCopy::
 copy_file(const Filename &source, const Filename &dest,
-          CVSSourceDirectory *, void *, bool) {
+          SCMSourceDirectory *, void *, bool) {
   return copy_binary_file(source, dest);
 }
 

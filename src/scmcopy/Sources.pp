@@ -1,5 +1,5 @@
 #begin ss_lib_target
-  #define TARGET cvscopy
+  #define TARGET scmcopy
   #define LOCAL_LIBS \
     progbase pandatoolbase
 
@@ -12,19 +12,19 @@
     $[if $[and $[HAVE_NET],$[WANT_NATIVE_NET]],net:c downloader:c]
 
   #define SOURCES \
-    cvsCopy.h cvsSourceDirectory.h cvsSourceTree.h
+    scmCopy.h scmSourceDirectory.h scmSourceTree.h
 
   #define COMPOSITE_SOURCES \
-    cvsCopy.cxx cvsSourceDirectory.cxx cvsSourceTree.cxx
+    scmCopy.cxx scmSourceDirectory.cxx scmSourceTree.cxx
 
   #define INSTALL_HEADERS \
-    cvsCopy.h
+    scmCopy.h
 
 #end ss_lib_target
 
 #begin test_bin_target
   #define TARGET testcopy
-  #define LOCAL_LIBS cvscopy
+  #define LOCAL_LIBS scmcopy
 
   #define SOURCES \
     testCopy.cxx testCopy.h

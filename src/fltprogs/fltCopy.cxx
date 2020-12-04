@@ -13,7 +13,7 @@
 
 #include "fltCopy.h"
 
-#include "cvsSourceDirectory.h"
+#include "scmSourceDirectory.h"
 #include "fltHeader.h"
 #include "fltFace.h"
 #include "fltExternalReference.h"
@@ -25,10 +25,10 @@
  */
 FltCopy::
 FltCopy() {
-  set_program_brief("copy MultiGen .flt files into a CVS source hierarchy");
+  set_program_brief("copy MultiGen .flt files into a SCM source hierarchy");
   set_program_description
     ("fltcopy copies one or more MultiGen .flt files into a "
-     "CVS source hierarchy.  "
+     "SCM source hierarchy.  "
      "Rather than copying the named files immediately into the current "
      "directory, it first scans the entire source hierarchy, identifying all "
      "the already-existing files.  If the named file to copy matches the "
@@ -53,7 +53,7 @@ run() {
     ExtraData ed;
     ed._type = FT_flt;
 
-    CVSSourceTree::FilePath dest = import(*fi, &ed, _model_dir);
+    SCMSourceTree::FilePath dest = import(*fi, &ed, _model_dir);
     if (!dest.is_valid()) {
       exit(1);
     }
@@ -67,7 +67,7 @@ run() {
  */
 bool FltCopy::
 copy_file(const Filename &source, const Filename &dest,
-          CVSSourceDirectory *dir, void *extra_data, bool new_file) {
+          SCMSourceDirectory *dir, void *extra_data, bool new_file) {
   ExtraData *ed = (ExtraData *)extra_data;
   switch (ed->_type) {
   case FT_flt:
@@ -86,7 +86,7 @@ copy_file(const Filename &source, const Filename &dest,
  */
 bool FltCopy::
 copy_flt_file(const Filename &source, const Filename &dest,
-              CVSSourceDirectory *dir) {
+              SCMSourceDirectory *dir) {
   PT(FltHeader) header = new FltHeader(_path_replace);
 
   // We don't want to automatically generate .attr files--we'd rather write
@@ -118,7 +118,7 @@ copy_flt_file(const Filename &source, const Filename &dest,
       ExtraData ed;
       ed._type = FT_flt;
 
-      CVSSourceTree::FilePath ref_path =
+      SCMSourceTree::FilePath ref_path =
         import(ref_filename, &ed, _model_dir);
       if (!ref_path.is_valid()) {
         return false;
@@ -148,7 +148,7 @@ copy_flt_file(const Filename &source, const Filename &dest,
       ed._type = FT_texture;
       ed._texture = tex;
 
-      CVSSourceTree::FilePath texture_path =
+      SCMSourceTree::FilePath texture_path =
         import(texture_filename, &ed, _map_dir);
       if (!texture_path.is_valid()) {
         return false;
@@ -176,7 +176,7 @@ copy_flt_file(const Filename &source, const Filename &dest,
  */
 bool FltCopy::
 copy_texture(const Filename &source, const Filename &dest,
-             CVSSourceDirectory *dir, FltTexture *tex, bool new_file) {
+             SCMSourceDirectory *dir, FltTexture *tex, bool new_file) {
   if (!copy_binary_file(source, dest)) {
     return false;
   }
@@ -190,7 +190,7 @@ copy_texture(const Filename &source, const Filename &dest,
   tex->write_attr_data(attr_filename);
 
   if (new_file) {
-    cvs_add(attr_filename);
+    scm_add(attr_filename);
   }
 
   return true;

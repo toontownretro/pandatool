@@ -16,13 +16,13 @@
 
 #include "pandatoolbase.h"
 
-#include "cvsCopy.h"
+#include "scmCopy.h"
 
 /**
- * A program to copy ordinary files into the cvs tree.  Mainly to test
- * CVSCopy.
+ * A program to copy ordinary files into a SCM hierarchy.  Mainly to test
+ * SCMCopy.
  */
-class TestCopy : public CVSCopy {
+class TestCopy : public SCMCopy {
 public:
   TestCopy();
 
@@ -30,7 +30,7 @@ public:
 
 protected:
   virtual bool copy_file(const Filename &source, const Filename &dest,
-                         CVSSourceDirectory *dir, void *extra_data,
+                         SCMSourceDirectory *dir, void *extra_data,
                          bool new_file);
 };
 
