@@ -109,6 +109,37 @@
 #end bin_target
 
 
+#begin bin_target
+  #define TARGET mayacopy
+  #define OTHER_LIBS \
+    dtoolbase:c dtoolutil:c dtool:m prc \
+    express:c pandaexpress:m
+  #define SOURCES \
+    mayapath.cxx
+#end bin_target
+
+#begin bin_target
+  #define USE_PACKAGES maya
+  #define TARGET mayacopy_bin
+  #define LOCAL_LIBS cvscopy mayabase progbase
+
+  #define OTHER_LIBS \
+    egg:c pandaegg:m \
+    linmath:c panda:m \
+    express:c pandaexpress:m \
+    interrogatedb dtoolutil:c dtoolbase:c prc dtool:m \
+    putil:c pipeline:c pnmimage:c
+
+  // Irix requires this to be named explicitly.
+  #define UNIX_SYS_LIBS \
+    ExtensionLayer
+
+  #define SOURCES \
+    mayaCopy.cxx mayaCopy.h
+
+#end bin_target
+
+
 #begin lib_target
   #define BUILD_TARGET $[not $[LINK_ALL_STATIC]]
   #define USE_PACKAGES maya

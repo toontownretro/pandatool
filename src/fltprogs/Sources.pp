@@ -9,6 +9,15 @@
   interrogatedb dtoolutil:c dtoolbase:c prc  dtool:m
 
 #begin bin_target
+  #define TARGET fltcopy
+  #define LOCAL_LIBS cvscopy flt
+
+  #define SOURCES \
+    fltCopy.cxx fltCopy.h
+
+#end bin_target
+
+#begin bin_target
   #define TARGET flt-trans
   #define LOCAL_LIBS \
     progbase flt
