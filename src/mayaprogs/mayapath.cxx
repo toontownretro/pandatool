@@ -386,8 +386,10 @@ main(int argc, char *argv[]) {
   // Also put the Maya bin directory on the PATH.
 #ifdef IS_OSX
   Filename bin = Filename(maya_location, "MacOS");
-#else
+#elif defined(_WIN32)
   Filename bin = Filename(maya_location, "bin");
+#else
+  Filename bin = Filename(maya_location, "lib");
 #endif
   if (bin.is_directory()) {
     const char *path = getenv("PATH");
