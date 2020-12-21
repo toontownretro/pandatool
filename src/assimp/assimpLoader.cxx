@@ -1008,9 +1008,10 @@ load_light(const aiLight &light) {
     vec = light.mPosition;
     plight->set_point(LPoint3(vec.x, vec.y, vec.z));
 
-    plight->set_attenuation(LVecBase3(light.mAttenuationConstant,
-                                       light.mAttenuationLinear,
-                                       light.mAttenuationQuadratic));
+    plight->set_falloff(light.mAttenuationQuadratic);
+    //plight->set_attenuation(LVecBase3(light.mAttenuationConstant,
+    //                                   light.mAttenuationLinear,
+    //                                   light.mAttenuationQuadratic));
     break; }
 
   case aiLightSource_SPOT: {
@@ -1023,9 +1024,10 @@ load_light(const aiLight &light) {
     //col = light.mColorSpecular;
     //plight->set_specular_color(LColor(col.r, col.g, col.b, 1));
 
-    plight->set_attenuation(LVecBase3(light.mAttenuationConstant,
-                                       light.mAttenuationLinear,
-                                       light.mAttenuationQuadratic));
+    plight->set_falloff(light.mAttenuationQuadratic);
+    //plight->set_attenuation(LVecBase3(light.mAttenuationConstant,
+    //                                   light.mAttenuationLinear,
+    //                                   light.mAttenuationQuadratic));
 
     plight->get_lens()->set_fov(light.mAngleOuterCone);
     // TODO: translate mAngleInnerCone to an exponent, somehow
