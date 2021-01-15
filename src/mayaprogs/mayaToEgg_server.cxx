@@ -158,7 +158,7 @@ MayaToEggServer() :
   _verbose = 0;
   _polygon_tolerance = 0.01;
   _transform_type = MayaToEggConverter::TT_model;
-  _got_tbnauto = true;
+  _got_tbnall = true;
   qManager = new QueuedConnectionManager();
   qListener = new QueuedConnectionListener(qManager, 0);
   qReader = new QueuedConnectionReader(qManager, 0);
@@ -313,7 +313,6 @@ run() {
   _got_output_filename = false;
   _merge_externals = false;
   _got_tbnall = false;
-  _got_tbnauto = false;
   _got_transform = false;
   _coordinate_system = CS_yup_right;
   _noabs = false;

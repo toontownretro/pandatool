@@ -40,7 +40,7 @@ MakeTxo() : WithOutputFile(true, false, true)
   _border_color = LColor(0, 0, 0, 1);
   _got_border_color = false;
 
-  set_program_brief("convert an image for set of images into a .txo file");
+  set_program_brief("convert an image or set of images into a .txo file");
   set_program_description
     ("This program converts an image or set of images into a .txo file, which "
      "is Panda's internal texture format.");

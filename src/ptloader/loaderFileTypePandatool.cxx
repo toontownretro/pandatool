@@ -210,9 +210,10 @@ save_file(const Filename &path, const LoaderOptions &options,
   }
 
   PT(EggData) egg_data = new EggData;
-  if (!save_egg_data(egg_data, node)) {
-    return false;
-  }
+  //if (!save_egg_data(egg_data, node)) {
+  //  return false;
+  //}
+  return false;
 
   EggToSomethingConverter *saver = _saver->make_copy();
   saver->set_egg_data(egg_data);

@@ -372,9 +372,9 @@ get_egg_group(MayaNodeDesc *node_desc) {
       // case (unless it represents a collision solid or something).
       bool visible = true;
       get_bool_attribute(dag_object, "visibility", visible);
-      if (!visible && egg_group->get_num_object_types() == 0) {
-        egg_group->set_visibility_mode(EggGroup::VM_hidden);
-      }
+      //if (!visible && egg_group->get_num_object_types() == 0) {
+      //  egg_group->set_visibility_mode(EggGroup::VM_hidden);
+      //}
 
       // We treat the object type "billboard" as a special case: we apply this
       // one right away and also flag the group as an instance.

@@ -32,13 +32,13 @@ TextureProperties() {
   _got_num_channels = false;
   _num_channels = 0;
   _effective_num_channels = 0;
-  _format = EggTexture::F_unspecified;
+  _format = F_unspecified;
   _force_format = false;
   _generic_format = false;
   _keep_format = false;
-  _minfilter = EggTexture::FT_unspecified;
-  _magfilter = EggTexture::FT_unspecified;
-  _quality_level = EggTexture::QL_unspecified;
+  _minfilter = FT_unspecified;
+  _magfilter = FT_unspecified;
+  _quality_level = QL_unspecified;
   _anisotropic_degree = 0;
   _color_type = nullptr;
   _alpha_type = nullptr;
@@ -95,12 +95,12 @@ operator = (const TextureProperties &copy) {
 void TextureProperties::
 clear_basic() {
   if (!_force_format) {
-    _format = EggTexture::F_unspecified;
+    _format = F_unspecified;
   }
 
-  _minfilter = EggTexture::FT_unspecified;
-  _magfilter = EggTexture::FT_unspecified;
-  _quality_level = EggTexture::QL_unspecified;
+  _minfilter = FT_unspecified;
+  _magfilter = FT_unspecified;
+  _quality_level = QL_unspecified;
   _anisotropic_degree = 0;
 }
 
@@ -162,17 +162,17 @@ force_nonalpha() {
 bool TextureProperties::
 uses_alpha() const {
   switch (_format) {
-  case EggTexture::F_rgba:
-  case EggTexture::F_rgbm:
-  case EggTexture::F_rgba12:
-  case EggTexture::F_rgba8:
-  case EggTexture::F_rgba4:
-  case EggTexture::F_rgba5:
-  case EggTexture::F_alpha:
-  case EggTexture::F_luminance_alpha:
-  case EggTexture::F_luminance_alphamask:
-  case EggTexture::F_srgb_alpha:
-  case EggTexture::F_sluminance_alpha:
+  case F_rgba:
+  case F_rgbm:
+  case F_rgba12:
+  case F_rgba8:
+  case F_rgba4:
+  case F_rgba5:
+  case F_alpha:
+  case F_luminance_alpha:
+  case F_luminance_alphamask:
+  case F_srgb_alpha:
+  case F_sluminance_alpha:
     return true;
 
   default:
@@ -246,38 +246,38 @@ void TextureProperties::
 fully_define() {
   if (!_got_num_channels || _force_format) {
     switch (_format) {
-    case EggTexture::F_rgba:
-    case EggTexture::F_rgbm:
-    case EggTexture::F_rgba12:
-    case EggTexture::F_rgba8:
-    case EggTexture::F_rgba4:
-    case EggTexture::F_rgba5:
-    case EggTexture::F_srgb_alpha:
+    case F_rgba:
+    case F_rgbm:
+    case F_rgba12:
+    case F_rgba8:
+    case F_rgba4:
+    case F_rgba5:
+    case F_srgb_alpha:
       _num_channels = 4;
       break;
 
-    case EggTexture::F_unspecified:
-    case EggTexture::F_rgb:
-    case EggTexture::F_rgb12:
-    case EggTexture::F_rgb8:
-    case EggTexture::F_rgb5:
-    case EggTexture::F_rgb332:
-    case EggTexture::F_srgb:
+    case F_unspecified:
+    case F_rgb:
+    case F_rgb12:
+    case F_rgb8:
+    case F_rgb5:
+    case F_rgb332:
+    case F_srgb:
       _num_channels = 3;
       break;
 
-    case EggTexture::F_luminance_alpha:
-    case EggTexture::F_luminance_alphamask:
-    case EggTexture::F_sluminance_alpha:
+    case F_luminance_alpha:
+    case F_luminance_alphamask:
+    case F_sluminance_alpha:
       _num_channels = 2;
       break;
 
-    case EggTexture::F_red:
-    case EggTexture::F_green:
-    case EggTexture::F_blue:
-    case EggTexture::F_alpha:
-    case EggTexture::F_luminance:
-    case EggTexture::F_sluminance:
+    case F_red:
+    case F_green:
+    case F_blue:
+    case F_alpha:
+    case F_luminance:
+    case F_sluminance:
       _num_channels = 1;
       break;
     }
@@ -291,35 +291,35 @@ fully_define() {
   // replace them with the more generic equivalents.
   if (_generic_format) {
     switch (_format) {
-    case EggTexture::F_unspecified:
-    case EggTexture::F_rgba:
-    case EggTexture::F_rgbm:
-    case EggTexture::F_rgb:
-    case EggTexture::F_red:
-    case EggTexture::F_green:
-    case EggTexture::F_blue:
-    case EggTexture::F_alpha:
-    case EggTexture::F_luminance:
-    case EggTexture::F_luminance_alpha:
-    case EggTexture::F_luminance_alphamask:
-    case EggTexture::F_srgb:
-    case EggTexture::F_srgb_alpha:
-    case EggTexture::F_sluminance:
-    case EggTexture::F_sluminance_alpha:
+    case F_unspecified:
+    case F_rgba:
+    case F_rgbm:
+    case F_rgb:
+    case F_red:
+    case F_green:
+    case F_blue:
+    case F_alpha:
+    case F_luminance:
+    case F_luminance_alpha:
+    case F_luminance_alphamask:
+    case F_srgb:
+    case F_srgb_alpha:
+    case F_sluminance:
+    case F_sluminance_alpha:
       break;
 
-    case EggTexture::F_rgba12:
-    case EggTexture::F_rgba8:
-    case EggTexture::F_rgba4:
-    case EggTexture::F_rgba5:
-      _format = EggTexture::F_rgba;
+    case F_rgba12:
+    case F_rgba8:
+    case F_rgba4:
+    case F_rgba5:
+      _format = F_rgba;
       break;
 
-    case EggTexture::F_rgb12:
-    case EggTexture::F_rgb8:
-    case EggTexture::F_rgb5:
-    case EggTexture::F_rgb332:
-      _format = EggTexture::F_rgb;
+    case F_rgb12:
+    case F_rgb8:
+    case F_rgb5:
+    case F_rgb332:
+      _format = F_rgb;
       break;
     }
   }
@@ -330,141 +330,141 @@ fully_define() {
     switch (_num_channels) {
     case 1:
       switch (_format) {
-      case EggTexture::F_red:
-      case EggTexture::F_green:
-      case EggTexture::F_blue:
-      case EggTexture::F_alpha:
-      case EggTexture::F_luminance:
-      case EggTexture::F_sluminance:
+      case F_red:
+      case F_green:
+      case F_blue:
+      case F_alpha:
+      case F_luminance:
+      case F_sluminance:
         break;
 
         // These formats suggest an alpha channel; they are quietly replaced
         // with non-alpha equivalents.
-      case EggTexture::F_luminance_alpha:
-      case EggTexture::F_luminance_alphamask:
-        _format = EggTexture::F_luminance;
+      case F_luminance_alpha:
+      case F_luminance_alphamask:
+        _format = F_luminance;
         break;
 
-      case EggTexture::F_sluminance_alpha:
-        _format = EggTexture::F_sluminance;
+      case F_sluminance_alpha:
+        _format = F_sluminance;
         break;
 
       default:
         if (_srgb) {
-          _format = EggTexture::F_sluminance;
+          _format = F_sluminance;
         } else {
-          _format = EggTexture::F_luminance;
+          _format = F_luminance;
         }
       }
       break;
 
     case 2:
       switch (_format) {
-      case EggTexture::F_luminance_alpha:
-      case EggTexture::F_luminance_alphamask:
-      case EggTexture::F_sluminance_alpha:
+      case F_luminance_alpha:
+      case F_luminance_alphamask:
+      case F_sluminance_alpha:
         break;
 
         // These formats implicitly reduce the number of channels to 1.
-      case EggTexture::F_red:
-      case EggTexture::F_green:
-      case EggTexture::F_blue:
-      case EggTexture::F_alpha:
-      case EggTexture::F_luminance:
-      case EggTexture::F_sluminance:
+      case F_red:
+      case F_green:
+      case F_blue:
+      case F_alpha:
+      case F_luminance:
+      case F_sluminance:
         break;
 
       default:
         if (_srgb) {
-          _format = EggTexture::F_sluminance_alpha;
+          _format = F_sluminance_alpha;
         } else {
-          _format = EggTexture::F_luminance_alpha;
+          _format = F_luminance_alpha;
         }
       }
       break;
 
     case 3:
       switch (_format) {
-      case EggTexture::F_rgb:
-      case EggTexture::F_rgb12:
-      case EggTexture::F_rgb8:
-      case EggTexture::F_rgb5:
-      case EggTexture::F_rgb332:
-      case EggTexture::F_srgb:
+      case F_rgb:
+      case F_rgb12:
+      case F_rgb8:
+      case F_rgb5:
+      case F_rgb332:
+      case F_srgb:
         break;
 
         // These formats suggest an alpha channel; they are quietly replaced
         // with non-alpha equivalents.
-      case EggTexture::F_rgba8:
-        _format = EggTexture::F_rgb8;
+      case F_rgba8:
+        _format = F_rgb8;
         break;
 
-      case EggTexture::F_rgba5:
-      case EggTexture::F_rgba4:
-        _format = EggTexture::F_rgb5;
+      case F_rgba5:
+      case F_rgba4:
+        _format = F_rgb5;
         break;
 
         // These formats implicitly reduce the number of channels to 1.
-      case EggTexture::F_red:
-      case EggTexture::F_green:
-      case EggTexture::F_blue:
-      case EggTexture::F_alpha:
-      case EggTexture::F_luminance:
-      case EggTexture::F_sluminance:
+      case F_red:
+      case F_green:
+      case F_blue:
+      case F_alpha:
+      case F_luminance:
+      case F_sluminance:
         break;
 
       default:
         if (_srgb) {
-          _format = EggTexture::F_srgb;
+          _format = F_srgb;
         } else {
-          _format = EggTexture::F_rgb;
+          _format = F_rgb;
         }
       }
       break;
 
     case 4:
       switch (_format) {
-      case EggTexture::F_rgba:
-      case EggTexture::F_rgbm:
-      case EggTexture::F_rgba12:
-      case EggTexture::F_rgba8:
-      case EggTexture::F_rgba4:
-      case EggTexture::F_rgba5:
-      case EggTexture::F_srgb_alpha:
+      case F_rgba:
+      case F_rgbm:
+      case F_rgba12:
+      case F_rgba8:
+      case F_rgba4:
+      case F_rgba5:
+      case F_srgb_alpha:
         break;
 
         // These formats implicitly reduce the number of channels to 3.
-      case EggTexture::F_rgb:
-      case EggTexture::F_rgb12:
-      case EggTexture::F_rgb8:
-      case EggTexture::F_rgb5:
-      case EggTexture::F_rgb332:
-      case EggTexture::F_srgb:
+      case F_rgb:
+      case F_rgb12:
+      case F_rgb8:
+      case F_rgb5:
+      case F_rgb332:
+      case F_srgb:
         _effective_num_channels = 3;
         break;
 
         // These formats implicitly reduce the number of channels to 2.
-      case EggTexture::F_luminance_alpha:
-      case EggTexture::F_luminance_alphamask:
-      case EggTexture::F_sluminance_alpha:
+      case F_luminance_alpha:
+      case F_luminance_alphamask:
+      case F_sluminance_alpha:
         _effective_num_channels = 2;
         break;
 
         // These formats implicitly reduce the number of channels to 1.
-      case EggTexture::F_red:
-      case EggTexture::F_green:
-      case EggTexture::F_blue:
-      case EggTexture::F_alpha:
-      case EggTexture::F_luminance:
-      case EggTexture::F_sluminance:
+      case F_red:
+      case F_green:
+      case F_blue:
+      case F_alpha:
+      case F_luminance:
+      case F_sluminance:
         _effective_num_channels = 1;
         break;
 
       default:
         if (_srgb) {
-          _format = EggTexture::F_srgb_alpha;
+          _format = F_srgb_alpha;
         } else {
-          _format = EggTexture::F_rgba;
+          _format = F_rgba;
         }
       }
     }
@@ -475,24 +475,24 @@ fully_define() {
   if (_srgb) {
     switch (_num_channels) {
       case 1:
-        _format = EggTexture::F_sluminance;
+        _format = F_sluminance;
         break;
       case 2:
-        _format = EggTexture::F_sluminance_alpha;
+        _format = F_sluminance_alpha;
         break;
       case 3:
-        _format = EggTexture::F_srgb;
+        _format = F_srgb;
         break;
       case 4:
       default:
-        _format = EggTexture::F_srgb_alpha;
+        _format = F_srgb_alpha;
         break;
     }
   }
 
   switch (_minfilter) {
-  case EggTexture::FT_unspecified:
-    _minfilter = EggTexture::FT_linear;
+  case FT_unspecified:
+    _minfilter = FT_linear;
     break;
 
   default:
@@ -500,12 +500,12 @@ fully_define() {
   }
 
   switch (_magfilter) {
-  case EggTexture::FT_unspecified:
-  case EggTexture::FT_nearest_mipmap_nearest:
-  case EggTexture::FT_linear_mipmap_nearest:
-  case EggTexture::FT_nearest_mipmap_linear:
-  case EggTexture::FT_linear_mipmap_linear:
-    _magfilter = EggTexture::FT_linear;
+  case FT_unspecified:
+  case FT_nearest_mipmap_nearest:
+  case FT_linear_mipmap_nearest:
+  case FT_nearest_mipmap_linear:
+  case FT_linear_mipmap_linear:
+    _magfilter = FT_linear;
     break;
 
   default:
@@ -607,75 +607,75 @@ operator != (const TextureProperties &other) const {
  * Returns a short string representing the given EggTexture format.
  */
 string TextureProperties::
-get_format_string(EggTexture::Format format) {
+get_format_string(Format format) {
   switch (format) {
-  case EggTexture::F_unspecified:
+  case F_unspecified:
     return "u";
 
-  case EggTexture::F_rgba:
+  case F_rgba:
     return "a";
 
-  case EggTexture::F_rgbm:
+  case F_rgbm:
     return "m";
 
-  case EggTexture::F_rgba12:
+  case F_rgba12:
     return "a12";
 
-  case EggTexture::F_rgba8:
+  case F_rgba8:
     return "a8";
 
-  case EggTexture::F_rgba4:
+  case F_rgba4:
     return "a4";
 
-  case EggTexture::F_rgba5:
+  case F_rgba5:
     return "a5";
 
-  case EggTexture::F_rgb:
+  case F_rgb:
     return "c";
 
-  case EggTexture::F_rgb12:
+  case F_rgb12:
     return "c12";
 
-  case EggTexture::F_rgb8:
+  case F_rgb8:
     return "c8";
 
-  case EggTexture::F_rgb5:
+  case F_rgb5:
     return "c5";
 
-  case EggTexture::F_rgb332:
+  case F_rgb332:
     return "c3";
 
-  case EggTexture::F_luminance_alpha:
+  case F_luminance_alpha:
     return "t"; // t for two-channel
 
-  case EggTexture::F_luminance_alphamask:
+  case F_luminance_alphamask:
     return "t1";
 
-  case EggTexture::F_red:
+  case F_red:
     return "r";
 
-  case EggTexture::F_green:
+  case F_green:
     return "g";
 
-  case EggTexture::F_blue:
+  case F_blue:
     return "b";
 
-  case EggTexture::F_alpha:
+  case F_alpha:
     return "a";
 
-  case EggTexture::F_luminance:
+  case F_luminance:
     return "l";
 
-  case EggTexture::F_srgb:
+  case F_srgb:
     return "s";
 
-  case EggTexture::F_srgb_alpha:
+  case F_srgb_alpha:
     return "sa";
 
-  case EggTexture::F_sluminance:
+  case F_sluminance:
     return "sl";
 
-  case EggTexture::F_sluminance_alpha:
+  case F_sluminance_alpha:
     return "sla";
   }
 
@@ -686,27 +686,27 @@ get_format_string(EggTexture::Format format) {
  * Returns a short string representing the given EggTexture filter type.
  */
 string TextureProperties::
-get_filter_string(EggTexture::FilterType filter_type) {
+get_filter_string(FilterType filter_type) {
   switch (filter_type) {
-  case EggTexture::FT_unspecified:
+  case FT_unspecified:
     return "u";
 
-  case EggTexture::FT_nearest:
+  case FT_nearest:
     return "n";
 
-  case EggTexture::FT_linear:
+  case FT_linear:
     return "l";
 
-  case EggTexture::FT_nearest_mipmap_nearest:
+  case FT_nearest_mipmap_nearest:
     return "m1";
 
-  case EggTexture::FT_linear_mipmap_nearest:
+  case FT_linear_mipmap_nearest:
     return "m2";
 
-  case EggTexture::FT_nearest_mipmap_linear:
+  case FT_nearest_mipmap_linear:
     return "m3";
 
-  case EggTexture::FT_linear_mipmap_linear:
+  case FT_linear_mipmap_linear:
     return "m";
   }
 
@@ -729,19 +729,19 @@ get_anisotropic_degree_string(int aniso_degree) {
  * Returns a short string describing the quality level.
  */
 string TextureProperties::
-get_quality_level_string(EggTexture::QualityLevel quality_level) {
+get_quality_level_string(QualityLevel quality_level) {
   switch (quality_level) {
-  case EggTexture::QL_unspecified:
-  case EggTexture::QL_default:
+  case QL_unspecified:
+  case QL_default:
     return "";
 
-  case EggTexture::QL_fastest:
+  case QL_fastest:
     return "f";
 
-  case EggTexture::QL_normal:
+  case QL_normal:
     return "n";
 
-  case EggTexture::QL_best:
+  case QL_best:
     return "b";
   }
   return "";
@@ -765,31 +765,31 @@ get_type_string(PNMFileType *color_type, PNMFileType *alpha_type) {
 /**
  * Returns the EggTexture format which is the more specific of the two.
  */
-EggTexture::Format TextureProperties::
-union_format(EggTexture::Format a, EggTexture::Format b) {
+Format TextureProperties::
+union_format(Format a, Format b) {
   switch (a) {
-  case EggTexture::F_unspecified:
+  case F_unspecified:
     return b;
 
-  case EggTexture::F_rgba:
+  case F_rgba:
     switch (b) {
-    case EggTexture::F_rgbm:
-    case EggTexture::F_rgba12:
-    case EggTexture::F_rgba8:
-    case EggTexture::F_rgba4:
-    case EggTexture::F_rgba5:
-    case EggTexture::F_red:
-    case EggTexture::F_green:
-    case EggTexture::F_blue:
-    case EggTexture::F_alpha:
+    case F_rgbm:
+    case F_rgba12:
+    case F_rgba8:
+    case F_rgba4:
+    case F_rgba5:
+    case F_red:
+    case F_green:
+    case F_blue:
+    case F_alpha:
       return b;
 
     default:
       return a;
     };
 
-  case EggTexture::F_rgb:
-    if (b != EggTexture::F_unspecified) {
+  case F_rgb:
+    if (b != F_unspecified) {
       return b;
     }
     return a;
@@ -802,8 +802,8 @@ union_format(EggTexture::Format a, EggTexture::Format b) {
 /**
  * Returns the EggTexture filter type which is the more specific of the two.
  */
-EggTexture::FilterType TextureProperties::
-union_filter(EggTexture::FilterType a, EggTexture::FilterType b) {
+FilterType TextureProperties::
+union_filter(FilterType a, FilterType b) {
   if ((int)a < (int)b) {
     return b;
   } else {
@@ -814,8 +814,8 @@ union_filter(EggTexture::FilterType a, EggTexture::FilterType b) {
 /**
  * Returns the EggTexture quality level which is the more specific of the two.
  */
-EggTexture::QualityLevel TextureProperties::
-union_quality_level(EggTexture::QualityLevel a, EggTexture::QualityLevel b) {
+QualityLevel TextureProperties::
+union_quality_level(QualityLevel a, QualityLevel b) {
   if ((int)a < (int)b) {
     return b;
   } else {
@@ -907,7 +907,7 @@ fillin(DatagramIterator &scan, BamReader *manager) {
   if (Palettizer::_read_pi_version >= 9) {
     _effective_num_channels = scan.get_int32();
   }
-  _format = (EggTexture::Format)scan.get_int32();
+  _format = (Format)scan.get_int32();
   _force_format = scan.get_bool();
   _generic_format = false;
   if (Palettizer::_read_pi_version >= 9) {
@@ -917,10 +917,10 @@ fillin(DatagramIterator &scan, BamReader *manager) {
   if (Palettizer::_read_pi_version >= 13) {
     _keep_format = scan.get_bool();
   }
-  _minfilter = (EggTexture::FilterType)scan.get_int32();
-  _magfilter = (EggTexture::FilterType)scan.get_int32();
+  _minfilter = (FilterType)scan.get_int32();
+  _magfilter = (FilterType)scan.get_int32();
   if (Palettizer::_read_pi_version >= 18) {
-    _quality_level = (EggTexture::QualityLevel)scan.get_int32();
+    _quality_level = (QualityLevel)scan.get_int32();
   }
   _anisotropic_degree = scan.get_int32();
 

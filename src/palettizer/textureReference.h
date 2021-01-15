@@ -58,8 +58,8 @@ public:
   const LTexCoordd &get_min_uv() const;
   const LTexCoordd &get_max_uv() const;
 
-  EggTexture::WrapMode get_wrap_u() const;
-  EggTexture::WrapMode get_wrap_v() const;
+  TextureProperties::WrapMode get_wrap_u() const;
+  TextureProperties::WrapMode get_wrap_v() const;
 
   bool is_equivalent(const TextureReference &other) const;
 
@@ -102,7 +102,7 @@ private:
 
   bool _any_uvs;
   LTexCoordd _min_uv, _max_uv;
-  EggTexture::WrapMode _wrap_u, _wrap_v;
+  TextureProperties::WrapMode _wrap_u, _wrap_v;
 
   TextureProperties _properties;
 

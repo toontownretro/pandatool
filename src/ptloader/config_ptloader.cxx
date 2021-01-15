@@ -15,25 +15,25 @@
 
 // This needs to be included first to work around a bug in OSX 10.4.
 #if defined(HAVE_FCOLLADA) && defined(IS_OSX)
-#include "daeToEggConverter.h"
+//#include "daeToEggConverter.h"
 #endif
 
 #include "loaderFileTypePandatool.h"
 
 #include "config_flt.h"
-#include "fltToEggConverter.h"
+//#include "fltToEggConverter.h"
 #include "config_lwo.h"
-#include "lwoToEggConverter.h"
-#include "dxfToEggConverter.h"
-#include "vrmlToEggConverter.h"
-#include "objToEggConverter.h"
-#include "eggToObjConverter.h"
+//#include "lwoToEggConverter.h"
+//#include "dxfToEggConverter.h"
+//#include "vrmlToEggConverter.h"
+//#include "objToEggConverter.h"
+//#include "eggToObjConverter.h"
 #include "config_xfile.h"
-#include "xFileToEggConverter.h"
+//#include "xFileToEggConverter.h"
 
 // Windows freaks out if this input is placed earlier.
 #if defined(HAVE_FCOLLADA) && !defined(IS_OSX)
-#include "daeToEggConverter.h"
+//#include "daeToEggConverter.h"
 #endif
 
 #include "dconfig.h"
@@ -80,26 +80,26 @@ init_libptloader() {
   LoaderFileTypeRegistry *reg = LoaderFileTypeRegistry::get_global_ptr();
 
   init_liblwo();
-  FltToEggConverter *flt = new FltToEggConverter;
-  reg->register_type(new LoaderFileTypePandatool(flt));
+  //FltToEggConverter *flt = new FltToEggConverter;
+  //reg->register_type(new LoaderFileTypePandatool(flt));
 
   init_libflt();
-  LwoToEggConverter *lwo = new LwoToEggConverter;
-  reg->register_type(new LoaderFileTypePandatool(lwo));
+  //LwoToEggConverter *lwo = new LwoToEggConverter;
+  //reg->register_type(new LoaderFileTypePandatool(lwo));
 
-  DXFToEggConverter *dxf = new DXFToEggConverter;
-  reg->register_type(new LoaderFileTypePandatool(dxf));
+  //DXFToEggConverter *dxf = new DXFToEggConverter;
+  //reg->register_type(new LoaderFileTypePandatool(dxf));
 
-  VRMLToEggConverter *vrml = new VRMLToEggConverter;
-  reg->register_type(new LoaderFileTypePandatool(vrml));
+  //VRMLToEggConverter *vrml = new VRMLToEggConverter;
+  //reg->register_type(new LoaderFileTypePandatool(vrml));
 
   init_libxfile();
-  XFileToEggConverter *xfile = new XFileToEggConverter;
-  reg->register_type(new LoaderFileTypePandatool(xfile));
+  //XFileToEggConverter *xfile = new XFileToEggConverter;
+  //reg->register_type(new LoaderFileTypePandatool(xfile));
 
-  ObjToEggConverter *obj_egg = new ObjToEggConverter;
-  EggToObjConverter *egg_obj = new EggToObjConverter;
-  reg->register_type(new LoaderFileTypePandatool(obj_egg, egg_obj));
+  //ObjToEggConverter *obj_egg = new ObjToEggConverter;
+  //EggToObjConverter *egg_obj = new EggToObjConverter;
+  //reg->register_type(new LoaderFileTypePandatool(obj_egg, egg_obj));
 
 // #ifdef HAVE_FCOLLADA DAEToEggConverter *dae = new DAEToEggConverter;
 // reg->register_type(new LoaderFileTypePandatool(dae)); #endif

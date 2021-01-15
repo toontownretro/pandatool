@@ -62,7 +62,6 @@ protected:
   double _normals_threshold;
   vector_string _tbn_names;
   bool _got_tbnall;
-  bool _got_tbnauto;
 
   bool _make_points;
 

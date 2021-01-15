@@ -21,7 +21,6 @@
 #include "geomTriangles.h"
 #include "pnmFileTypeRegistry.h"
 #include "pnmImage.h"
-#include "materialAttrib.h"
 #include "textureAttrib.h"
 #include "cullFaceAttrib.h"
 #include "ambientLight.h"
@@ -375,40 +374,6 @@ load_material(size_t index) {
   PN_stdfloat fval;
 
   // XXX a lot of this is untested.
-
-  // First do the material attribute.
-  PT(Material) pmat = new Material;
-  have = false;
-  if (AI_SUCCESS == mat.Get(AI_MATKEY_COLOR_DIFFUSE, col)) {
-    pmat->set_diffuse(LColor(col.r, col.g, col.b, 1));
-    have = true;
-  }
-  if (AI_SUCCESS == mat.Get(AI_MATKEY_COLOR_SPECULAR, col)) {
-    if (AI_SUCCESS == mat.Get(AI_MATKEY_SHININESS_STRENGTH, fval)) {
-      pmat->set_specular(LColor(col.r * fval, col.g * fval, col.b * fval, 1));
-    } else {
-      pmat->set_specular(LColor(col.r, col.g, col.b, 1));
-    }
-    have = true;
-  }
-  if (AI_SUCCESS == mat.Get(AI_MATKEY_COLOR_AMBIENT, col)) {
-    pmat->set_specular(LColor(col.r, col.g, col.b, 1));
-    have = true;
-  }
-  if (AI_SUCCESS == mat.Get(AI_MATKEY_COLOR_EMISSIVE, col)) {
-    pmat->set_emission(LColor(col.r, col.g, col.b, 1));
-    have = true;
-  }
-  if (AI_SUCCESS == mat.Get(AI_MATKEY_COLOR_TRANSPARENT, col)) {
-    // FIXME: ???
-  }
-  if (AI_SUCCESS == mat.Get(AI_MATKEY_SHININESS, fval)) {
-    pmat->set_shininess(fval);
-    have = true;
-  }
-  if (have) {
-    state = state->add_attrib(MaterialAttrib::make(pmat));
-  }
 
   // Wireframe.
   if (AI_SUCCESS == mat.Get(AI_MATKEY_ENABLE_WIREFRAME, ival)) {

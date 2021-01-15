@@ -38,11 +38,6 @@ EggTrans() {
      &EggTrans::dispatch_none, &_flatten_transforms);
 
   add_option
-    ("t", "", 0,
-     "Apply texture matrices to UV's.",
-     &EggTrans::dispatch_none, &_apply_texmats);
-
-  add_option
     ("T", "", 0,
      "Collapse equivalent texture references.",
      &EggTrans::dispatch_none, &_collapse_equivalent_textures);
@@ -97,15 +92,9 @@ run() {
     _data->mesh_triangles(~0);
   }
 
-  if (_apply_texmats) {
-    nout << "Applying texture matrices.\n";
-    _data->apply_texmats();
-    _data->remove_unused_vertices(true);
-  }
-
   if (_collapse_equivalent_textures) {
     nout << "Collapsing equivalent textures.\n";
-    int num_removed = _data->collapse_equivalent_textures();
+    int num_removed = _data->collapse_equivalent_materials();
     nout << "  (" << num_removed << " removed.)\n";
   }
 

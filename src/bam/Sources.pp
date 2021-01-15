@@ -40,6 +40,7 @@
 
 
 #begin bin_target
+  #define BUILD_TARGET
   #define TARGET bam2egg
   #define LOCAL_LIBS \
     converter eggbase progbase

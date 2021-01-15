@@ -14,7 +14,6 @@
 #include "eggSingleBase.h"
 
 #include "eggGroupNode.h"
-#include "eggTexture.h"
 #include "eggFilenameNode.h"
 #include "eggComment.h"
 #include "dcast.h"

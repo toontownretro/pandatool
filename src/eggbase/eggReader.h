@@ -20,6 +20,7 @@
 #include "filename.h"
 
 class PNMFileType;
+class Material;
 
 /**
  * This is the base class for a program that reads egg files, but doesn't
@@ -43,6 +44,7 @@ protected:
 
 private:
   bool copy_textures();
+  bool copy_material_textures(Material *material, bool &any_copied);
   bool do_delod(EggNode *node);
 
 protected:
