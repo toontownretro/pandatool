@@ -33,6 +33,7 @@
 #include "texture.h"
 #include "texturePool.h"
 #include "material.h"
+#include "pTexture.h"
 
 #include "pre_maya_include.h"
 #include <maya/MStatus.h>
@@ -250,13 +251,18 @@ MayaEggTex *MayaEggLoader::GetTex(EggMaterial* etex)
     if (mat != nullptr) {
       // Find the base texture.
       for (size_t i = 0; i < mat->get_num_textures(); i++) {
-        Material::ScriptTexture *tex = mat->get_texture(i);
-        if (tex->_texture_type == Material::ScriptTexture::T_filename) {
-          if (tex->_stage_name == "albedo" || tex->_stage_name == "base" ||
-              tex->_stage_name == "color" || tex->_stage_name == "basecolor") {
+        MatTexture *tex = mat->get_texture(i);
+        if (tex->get_source() == MatTexture::S_filename) {
+          if (tex->get_stage_name() == "albedo" || tex->get_stage_name() == "base" ||
+              tex->get_stage_name() == "color" || tex->get_stage_name() == "basecolor") {
 
             // Here's the one we want.
-            fn = tex->_fullpath.to_os_specific();
+            // Pull out the image from the .ptex.
+            PT(PTexture) ptex = PTexture::load(tex->get_fullpath());
+            if (ptex == nullptr) {
+              continue;
+            }
+            fn = ptex->get_image_fullpath().to_os_specific();
             break;
           }
         }
