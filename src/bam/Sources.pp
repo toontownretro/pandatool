@@ -58,4 +58,28 @@
     ptsToBam.cxx ptsToBam.h
 #end bin_target
 
+#begin bin_target
+  #define TARGET make-txo
+  #define LOCAL_LIBS progbase
+
+  #define SOURCES \
+    makeTxo.cxx makeTxo.h
+#end bin_target
+
+#begin bin_target
+  #define TARGET ptex2txo
+  #define LOCAL_LIBS progbase
+
+  #define SOURCES \
+    ptexToTxo.cxx ptexToTxo.h
+#end bin_target
+
+#begin bin_target
+  #define TARGET pmat2rso
+  #define LOCAL_LIBS progbase
+
+  #define SOURCES \
+    pmatToRso.cxx pmatToRso.h
+#end bin_target
+
 #endif // HAVE_EGG
