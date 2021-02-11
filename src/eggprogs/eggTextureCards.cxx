@@ -20,6 +20,7 @@
 #include "eggPolygon.h"
 #include "pnmImageHeader.h"
 #include "material.h"
+#include "pTexture.h"
 
 #include <algorithm>
 
@@ -144,11 +145,17 @@ scan_texture(const Filename &filename, LVecBase4d &geometry) {
   }
 
   for (size_t i = 0; i < mat->get_num_textures(); i++) {
-    Material::ScriptTexture *tex = mat->get_texture(i);
-    if (tex->_texture_type == Material::ScriptTexture::T_filename) {
+    MatTexture *tex = mat->get_texture(i);
+    if (tex->get_source() == MatTexture::S_filename) {
+      PT(PTexture) ptex = PTexture::load(tex->get_fullpath());
+      if (ptex == nullptr) {
+        nout << "Unable to read ptex " << tex->get_fullpath() << "\n";
+        continue;
+      }
+
       PNMImageHeader header;
-      if (!header.read_header(tex->_fullpath)) {
-        nout << "Unable to read image " << tex->_filename << "\n";
+      if (!header.read_header(ptex->get_image_fullpath())) {
+        nout << "Unable to read image " << ptex->get_image_fullpath() << "\n";
         continue;
       }
 

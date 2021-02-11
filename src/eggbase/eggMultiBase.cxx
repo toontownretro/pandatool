@@ -155,8 +155,7 @@ read_egg(const Filename &filename) {
   // We always resolve filenames first based on the source egg filename, since
   // egg files almost always store relative paths.  This is a temporary kludge
   // around integrating the path_replace system with the EggData better.
-  // Update: I believe this kludge is obsolete.  Commenting out.  - Josh.
-  // data->resolve_filenames(file_path);
+  data->resolve_filenames(file_path);
 
   if (_force_complete) {
     if (!data->load_externals()) {
@@ -166,7 +165,7 @@ read_egg(const Filename &filename) {
 
   // Now resolve the filenames again according to the user's specified
   // _path_replace.
-  EggBase::convert_paths(data, _path_replace, file_path);
+  //EggBase::convert_paths(data, _path_replace, file_path);
 
   if (_got_coordinate_system) {
     data->set_coordinate_system(_coordinate_system);

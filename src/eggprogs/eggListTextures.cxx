@@ -14,6 +14,7 @@
 #include "eggListTextures.h"
 #include "eggMaterialCollection.h"
 #include "material.h"
+#include "pTexture.h"
 #include "pnmImageHeader.h"
 
 /**
@@ -54,15 +55,22 @@ run() {
     }
 
     for (size_t i = 0; i < mat->get_num_textures(); i++) {
-      Material::ScriptTexture *tex = mat->get_texture(i);
-      if (tex->_texture_type == Material::ScriptTexture::T_filename) {
-        PNMImageHeader header;
-        if (header.read_header(tex->_fullpath)) {
-          std::cout << tex->_filename.get_basename() << " : "
-              << header.get_x_size() << " " << header.get_y_size() << "\n";
-        } else {
-          std::cout << tex->_filename.get_basename() << " : unknown\n";
-        }
+      MatTexture *tex = mat->get_texture(i);
+      if (tex->get_source() != MatTexture::S_filename) {
+        continue;
+      }
+
+      PT(PTexture) ptex = PTexture::load(tex->get_fullpath());
+      if (ptex == nullptr) {
+        continue;
+      }
+
+      PNMImageHeader header;
+      if (header.read_header(ptex->get_image_fullpath())) {
+        std::cout << ptex->get_image_filename().get_basename() << " : "
+            << header.get_x_size() << " " << header.get_y_size() << "\n";
+      } else {
+        std::cout << ptex->get_image_filename().get_basename() << " : unknown\n";
       }
     }
   }

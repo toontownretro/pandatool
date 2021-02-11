@@ -22,6 +22,7 @@
 #include "string_utils.h"
 #include "dcast.h"
 #include "material.h"
+#include "pTexture.h"
 
 /**
  *
@@ -193,6 +194,8 @@ handle_args(ProgramBase::Args &args) {
     DSearchPath file_path;
     file_path.append_directory(filename.get_dirname());
 
+    file_data.resolve_filenames(file_path);
+
     if (_force_complete) {
       if (!file_data.load_externals(file_path)) {
         exit(1);
@@ -201,7 +204,7 @@ handle_args(ProgramBase::Args &args) {
 
     // Now resolve the filenames again according to the user's specified
     // _path_replace.
-    convert_paths(&file_data, _path_replace, file_path);
+    //convert_paths(&file_data, _path_replace, file_path);
 
     _data->merge(file_data);
   }
@@ -320,59 +323,121 @@ copy_material_textures(Material *material, bool &any_copied) {
   any_copied = false;
 
   for (size_t i = 0; i < material->get_num_textures(); i++) {
-    Material::ScriptTexture *tex = material->get_texture(i);
-    if (tex->_texture_type == Material::ScriptTexture::T_filename) {
-      Filename orig_filename = tex->_filename;
+    MatTexture *tex = material->get_texture(i);
+    if (tex->get_source() == MatTexture::S_filename) {
+      Filename orig_filename = tex->get_filename();
+      Filename new_filename = orig_filename.get_basename();
 
-      if (!orig_filename.exists()) {
-        bool found = orig_filename.resolve_filename(get_model_path());
-        if (!found) {
-          nout << "Cannot find " << orig_filename << "\n";
+      if (new_filename != orig_filename) {
+        tex->set_filename(new_filename);
+        any_copied = true;
+
+        bool textures_copied = false;
+
+        PT(PTexture) ptex = PTexture::load(tex->get_fullpath());
+        if (ptex == nullptr) {
           success = false;
           continue;
         }
-      }
 
-      // We don't want to read a .txo as a PNMImage or change the extension,
-      // that is a Panda Texture object.
-      bool is_txo = (orig_filename.get_extension() == "txo");
+        if (!ptex->get_image_filename().empty()) {
+          Filename orig_image_filename = ptex->get_image_filename();
+          Filename new_image_filename = orig_image_filename.get_basename();
+          if (_got_tex_extension) {
+            new_image_filename.set_extension(_tex_extension);
+          }
 
-      Filename new_filename = orig_filename.get_basename();
-      if (_got_tex_extension && !is_txo) {
-        new_filename.set_extension(_tex_extension);
-      }
+          if (orig_image_filename != new_image_filename) {
+            ptex->set_image_filename(new_image_filename);
 
-      if (new_filename != orig_filename) {
-        tex->_filename = new_filename;
-        any_copied = true;
+            // The new filename is different; does it need copying?
+            int compare =
+              orig_image_filename.compare_timestamps(new_image_filename, true, true);
+            if (compare > 0) {
+              textures_copied = true;
+              // Yes, it does.  Copy it!
+              if ((orig_image_filename.get_extension() != new_image_filename.get_extension())) {
+                // The extension is different, need to use PNMImage to
+                // save the texture in the new format.
+                nout << "Reading " << orig_image_filename << "\n";
+                PNMImage image;
+                if (!image.read(orig_image_filename)) {
+                  nout << "  unable to read!\n";
+                  success = false;
+                } else {
+                  nout << "Writing " << new_image_filename << "\n";
+                  if (!image.write(new_image_filename, _tex_type)) {
+                    nout << "  unable to write!\n";
+                    success = false;
+                  }
+                }
+
+              } else {
+                // The extension is the same.  Just copy the file.
+                if (!orig_image_filename.copy_to(new_image_filename)) {
+                  nout << "Unable to copy texture " << orig_image_filename << " to " << new_image_filename
+                      << "\n";
+                  success = false;
+                }
+              }
+            }
+          }
+        }
+
+        if (ptex->has_alpha_image_filename()) {
+          Filename orig_image_filename = ptex->get_alpha_image_filename();
+          Filename new_image_filename = orig_image_filename.get_basename();
+          if (_got_tex_extension) {
+            new_image_filename.set_extension(_tex_extension);
+          }
+
+          if (orig_image_filename != new_image_filename) {
+            ptex->set_alpha_image_filename(new_image_filename);
+
+            // The new filename is different; does it need copying?
+            int compare =
+              orig_image_filename.compare_timestamps(new_image_filename, true, true);
+            if (compare > 0) {
+              textures_copied = true;
+              // Yes, it does.  Copy it!
+              if ((orig_image_filename.get_extension() != new_image_filename.get_extension())) {
+                // The extension is different, need to use PNMImage to
+                // save the texture in the new format.
+                nout << "Reading " << orig_image_filename << "\n";
+                PNMImage image;
+                if (!image.read(orig_image_filename)) {
+                  nout << "  unable to read!\n";
+                  success = false;
+                } else {
+                  nout << "Writing " << new_image_filename << "\n";
+                  if (!image.write(new_image_filename, _tex_type)) {
+                    nout << "  unable to write!\n";
+                    success = false;
+                  }
+                }
+
+              } else {
+                // The extension is the same.  Just copy the file.
+                if (!orig_image_filename.copy_to(new_image_filename)) {
+                  nout << "Unable to copy texture " << orig_image_filename << " to " << new_image_filename
+                      << "\n";
+                  success = false;
+                }
+              }
+            }
+          }
+        }
 
         // The new filename is different; does it need copying?
         int compare =
           orig_filename.compare_timestamps(new_filename, true, true);
-        if (compare > 0) {
-
+        if (compare > 0 || textures_copied) {
           // Yes, it does.  Copy it!
-          if (!is_txo && (orig_filename.get_extension() != new_filename.get_extension())) {
-            // Not a .txo and the extension is different, need to use PNMImage to
-            // save the texture in the new format.
-            nout << "Reading " << orig_filename << "\n";
-            PNMImage image;
-            if (!image.read(orig_filename)) {
-              nout << "  unable to read!\n";
-              success = false;
-            } else {
-              nout << "Writing " << new_filename << "\n";
-              if (!image.write(new_filename, _tex_type)) {
-                nout << "  unable to write!\n";
-                success = false;
-              }
-            }
-
+          if (textures_copied) {
+            ptex->write(new_filename);
           } else {
-            // It's a .txo or the extension is the same.  Just copy the file.
             if (!orig_filename.copy_to(new_filename)) {
-              nout << "Unable to copy texture " << orig_filename << " to " << new_filename
-                   << "\n";
+              nout << "Unable to copy " << orig_filename << " to " << new_filename << "\n";
               success = false;
             }
           }

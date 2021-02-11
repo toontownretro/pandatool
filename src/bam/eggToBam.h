@@ -40,31 +40,11 @@ protected:
   virtual bool handle_args(Args &args);
 
 private:
-  class TxoTexture {
-  public:
-    TxoTexture();
-
-    Filename _txo_filename;
-
-    Filename _img_filename;
-    time_t _img_timestamp;
-    Filename _alpha_img_filename;
-    time_t _alpha_img_timestamp;
-  };
-
-  void collect_textures(PandaNode *node);
-  void collect_textures(const RenderState *state);
-  void convert_txo(Texture *tex, const TxoTexture &txo_tex);
-  void set_txo_data(Texture *tex, const TxoTexture &txo_tex);
-
-  bool make_buffer();
+  void collect_materials(PandaNode *node);
 
 private:
-  typedef pset<Texture *> Textures;
-  Textures _textures;
-
-  typedef pmap<Filename, TxoTexture> TxoTextures;
-  TxoTextures _txo_textures;
+  typedef pset<const RenderState *> Materials;
+  Materials _materials;
 
   bool _has_egg_flatten;
   int _egg_flatten;
@@ -75,21 +55,6 @@ private:
   bool _has_compression_quality;
   int _compression_quality;
   bool _compression_off;
-  bool _tex_rawdata;
-  bool _tex_txo;
-  bool _tex_txopz;
-  bool _tex_ctex;
-  bool _tex_mipmap;
-  std::string _ctex_quality;
-  std::string _load_display;
-  Filename _txo_cache;
-  bool _got_txo_cache;
-
-  // The rest of this is required to support -ctex.
-  PT(GraphicsPipe) _pipe;
-  GraphicsStateGuardian *_gsg;
-  GraphicsEngine *_engine;
-  GraphicsOutput *_buffer;
 };
 
 #endif
