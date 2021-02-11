@@ -57,6 +57,7 @@ public:
   void zero_channels(const std::string &components);
   void quantize_channels(const std::string &components, double quantum);
   void apply_default_pose(int source_model, int frame);
+  void apply_default_pose(const LMatrix4d &mat);
 
   virtual void add_back_pointer(int model_index, EggObject *egg_object);
   virtual void write(std::ostream &out, int indent_level = 0) const;

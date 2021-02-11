@@ -38,12 +38,15 @@ public:
   virtual bool do_rebuild(EggCharacterDb &db);
   virtual void expose(EggGroup::DCSType dcs_type);
   virtual void apply_default_pose(EggJointPointer *source_joint, int frame);
+  virtual void apply_default_pose(const LMatrix4d &mat);
 
   virtual bool has_vertices() const;
 
   virtual EggJointPointer *make_new_joint(const std::string &name);
 
   virtual void set_name(const std::string &name);
+
+  EggGroup *get_joint() const;
 
 private:
   PT(EggGroup) _joint;
