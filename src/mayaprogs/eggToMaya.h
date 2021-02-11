@@ -17,9 +17,6 @@
 #include "pandatoolbase.h"
 
 #include "eggToSomething.h"
-#include "mayaApi.h"
-
-#include "programBase.h"
 
 /**
  * A program to read an egg file and write a maya file.
@@ -28,17 +25,12 @@ class EggToMaya : public EggToSomething {
 public:
   EggToMaya();
 
-  bool run();
+  void run();
 
 private:
-  virtual bool handle_args(ProgramBase::Args &args);
-
-  PT(MayaApi) open_api();
-
   bool _convert_anim;
   bool _convert_model;
   bool _respect_normals;
-  bool _run_server;
 };
 
 #endif

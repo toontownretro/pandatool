@@ -37,7 +37,6 @@ public:
   ~MayaApi();
 
   static PT(MayaApi) open_api(std::string program_name = "", bool view_license = false, bool revertdir = true);
-  static bool is_api_valid();
   bool is_valid() const;
 
   bool read(const Filename &filename);
@@ -52,7 +51,7 @@ private:
   bool _is_valid;
   bool _plug_in;
   Filename _cwd;
-  static PT(MayaApi) _global_api;
+  static MayaApi *_global_api;
 };
 
 #endif

@@ -33,12 +33,6 @@
  */
 class ProgramBase {
 public:
-  enum ExitCode {
-    EC_not_exited = -1,
-    EC_clean_exit = 0,
-    EC_failure = 1
-  };
-
   ProgramBase(const std::string &name = std::string());
   virtual ~ProgramBase();
 
@@ -51,7 +45,7 @@ public:
 
   void write_man_page(std::ostream &out);
 
-  virtual ExitCode parse_command_line(int argc, char **argv, bool exit_on_complete = true);
+  virtual void parse_command_line(int argc, char **argv);
 
   std::string get_exec_command() const;
 

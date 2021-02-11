@@ -14,7 +14,6 @@
 #include "eggToMaya.h"
 #include "mayaEggLoader.h"
 #include "mayaApi.h"
-#include "mayaConversionServer.h"
 
 // We must define this to prevent Maya from doubly-declaring its MApiVersion
 // string in this file as well as in libmayaegg.
@@ -57,40 +56,14 @@ EggToMaya() :
      "respect vertex and polygon normals.",
      &EggToMaya::dispatch_none, &_respect_normals);
 
-  add_option("server", "", 0,
-    "Runs the Maya model conversion server. This server can be used in tandem "
-    "with the egg2maya_client and maya2egg_client utilities to batch convert "
-    "both Maya and Panda3D model files.",
-    &EggToMaya::dispatch_none, &_run_server);
-
   // Maya files always store centimeters.
   _output_units = DU_centimeters;
 }
 
 /**
- * Attempts to create the global Maya API.
- * Exits the program if unsuccessful.
+ *
  */
-PT(MayaApi) EggToMaya::
-open_api() {
-  if (!MayaApi::is_api_valid()) {
-    nout << "Initializing Maya...\n";
-  }
-
-  PT(MayaApi) api = MayaApi::open_api(_program_name, true, true);
-
-  if (!api || !api->is_valid()) {
-    nout << "Unable to initialize Maya.\n";
-    exit(1);
-  }
-
-  return api;
-}
-
-/**
- * Returns true if the model has been successfully converted.
- */
-bool EggToMaya::
+void EggToMaya::
 run() {
   if (!_convert_anim && !_convert_model) {
     _convert_model = true;
@@ -100,13 +73,18 @@ run() {
   // since Maya now has a nasty habit of changing the current directory.
   _output_filename.make_absolute();
 
-  PT(MayaApi) maya = open_api();
+  nout << "Initializing Maya.\n";
+  PT(MayaApi) maya = MayaApi::open_api(_program_name);
+  if (!maya->is_valid()) {
+    nout << "Unable to initialize Maya.\n";
+    exit(1);
+  }
 
   MStatus status;
   status = MFileIO::newFile(true);
   if (!status) {
     status.perror("Could not initialize file");
-    return false;
+    exit(1);
   }
 
   // [gjeon] since maya's internal unit is fixed to cm and when we can't
@@ -123,12 +101,12 @@ run() {
   // Now convert the data.
   if (!MayaLoadEggData(_data, true, _convert_model, _convert_anim, _respect_normals)) {
     nout << "Unable to convert egg file.\n";
-    return false;
+    exit(1);
   }
 
   if (!maya->write(_output_filename)) {
     status.perror("Could not save file");
-    return false;
+    exit(1);
   }
 
   /*
@@ -141,29 +119,14 @@ run() {
   status = MFileIO::saveAs(os_specific.c_str(), file_type);
   if (!status) {
     status.perror("Could not save file");
-    return false;
+    exit(1);
   }
   */
-
-  return true;
 }
 
-/**
- * Processes the arguments parsed by the program.
- *
- * If the server flag is specified, the Maya conversion server is started
- * up rather than the usual conversion utility functionality.
- */
-bool EggToMaya::
-handle_args(ProgramBase::Args &args) {
-  if (_run_server) {
-    open_api();
-
-    MayaConversionServer server;
-    server.listen();
-    exit(0);
-    return true;
-  }
-
-  return EggToSomething::handle_args(args);
+int main(int argc, char *argv[]) {
+  EggToMaya prog;
+  prog.parse_command_line(argc, argv);
+  prog.run();
+  return 0;
 }

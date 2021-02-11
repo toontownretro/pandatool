@@ -6,39 +6,15 @@
  * license.  You should have received a copy of this license along
  * with this source code in a file named "LICENSE."
  *
- * @file mayaToEgg.cxx
- * @author drose
- * @date 2000-02-15
- *
- * Additional Maintenance by the PandaSE team
- * Carnegie Mellon Entertainment Technology Center
- * Spring '10
- * Team Members:
- * Deepak Chandraskeran - producer / programmer
- * Andrew Gartner - programmer/technical artist
- * Federico Perazzi - programmer
- * Shuying Feng - programmer
- * Wei-Feng Huang - programmer
- * (Egger additions by Andrew Gartner and Wei-Feng Huang)
- * The egger can now support vertex color in a variety
- * of combinations with flat color and file color textures
- * (see set_vertex_color).  Also, there are two new
- * command line options "legacy-shaders" and "texture-copy".
- * The first treats any Maya material/shader as if it were
- * a legacy shader. Passing it through the legacy codepath.
- * This feature was originally intended to fix a bug where
- * flat-color was being ignored in the modern (Phong) codepath
- * However, with the new vertex and flat color functions it
- * may not be necessary.  Still, until the newer color functions
- * have been tried and tested more, the feature has been left in
- * to anticipate any problems that may arise. The texture copy
- * feature was added to provide a way to resolve build path issues
- * and can support both relative and absolute paths. The feature
- * will copy any file maps/textures to the specified directory
- * and update the egg file accordingly.
+ * @file mayaToEgg_server.cxx
+ * @author cbrunner
+ * @date 2009-11-09
  */
 
-#include "mayaToEgg.h"
+#ifdef _WIN32
+#include <direct.h>  // for chdir
+#endif
+#include "mayaToEgg_server.h"
 #include "mayaToEggConverter.h"
 #include "config_mayaegg.h"
 #include "config_maya.h"  // for maya_cat
@@ -47,8 +23,8 @@
 /**
  *
  */
-MayaToEgg::
-MayaToEgg() :
+MayaToEggServer::
+MayaToEggServer() :
   SomethingToEgg("Maya", ".mb")
 {
   add_path_replace_options();
@@ -69,14 +45,14 @@ MayaToEgg() :
      "Generate polygon output only.  Tesselate all NURBS surfaces to "
      "polygons via the built-in Maya tesselator.  The tesselation will "
      "be based on the tolerance factor given by -ptol.",
-     &MayaToEgg::dispatch_none, &_polygon_output);
+     &MayaToEggServer::dispatch_none, &_polygon_output);
 
   add_option
     ("ptol", "tolerance", 0,
      "Specify the fit tolerance for Maya polygon tesselation.  The smaller "
      "the number, the more polygons will be generated.  The default is "
      "0.01.",
-     &MayaToEgg::dispatch_double, nullptr, &_polygon_tolerance);
+     &MayaToEggServer::dispatch_double, nullptr, &_polygon_tolerance);
 
   add_option
     ("bface", "", 0,
@@ -87,7 +63,7 @@ MayaToEgg() :
      "off where it is not desired).  If this flag is not specified, the "
      "default is to treat all polygons as single-sided, unless an "
      "egg object type of \"double-sided\" is set.",
-     &MayaToEgg::dispatch_none, &_respect_maya_double_sided);
+     &MayaToEggServer::dispatch_none, &_respect_maya_double_sided);
 
   add_option
     ("suppress-vcolor", "", 0,
@@ -95,34 +71,19 @@ MayaToEgg() :
      "(This is the way Maya normally renders internally.)  The egg flag "
      "'vertex-color' may be applied to a particular model to override "
      "this setting locally.",
-     &MayaToEgg::dispatch_none, &_suppress_vertex_color);
-
-  add_option
-    ("convert-cameras", "", 0,
-     "Convert all camera nodes to locators. Will preserve position and rotation.",
-     &MayaToEgg::dispatch_none, &_convert_cameras);
-
-  add_option
-    ("convert-lights", "", 0,
-     "Convert all light nodes to locators. Will preserve position and rotation only.",
-     &MayaToEgg::dispatch_none, &_convert_lights);
+     &MayaToEggServer::dispatch_none, &_suppress_vertex_color);
 
   add_option
     ("keep-uvs", "", 0,
      "Convert all UV sets on all vertices, even those that do not appear "
      "to be referenced by any textures.",
-     &MayaToEgg::dispatch_none, &_keep_all_uvsets);
+     &MayaToEggServer::dispatch_none, &_keep_all_uvsets);
 
   add_option
     ("round-uvs", "", 0,
      "round up uv coordinates to the nearest 1/100th. i.e. -0.001 becomes"
      "0.0; 0.444 becomes 0.44; 0.778 becomes 0.78.",
-     &MayaToEgg::dispatch_none, &_round_uvs);
-
-  add_option
-    ("copytex", "dir", 41,
-     "Legacy option.  Same as -pc.",
-     &MayaToEgg::dispatch_filename, &_legacy_copytex, &_legacy_copytex_dir);
+     &MayaToEggServer::dispatch_none, &_round_uvs);
 
   add_option
     ("trans", "type", 0,
@@ -130,7 +91,7 @@ MayaToEgg() :
      "transforms in the egg file.  The option may be one of all, model, "
      "dcs, or none.  The default is model, which means only transforms on "
      "nodes that have the model flag or the dcs flag are preserved.",
-     &MayaToEgg::dispatch_transform_type, nullptr, &_transform_type);
+     &MayaToEggServer::dispatch_transform_type, nullptr, &_transform_type);
 
   add_option
     ("subroot", "name", 0,
@@ -140,7 +101,7 @@ MayaToEgg() :
      "like * or ?).  This parameter may be repeated multiple times to name "
      "multiple roots.  If it is omitted altogether, the entire file is "
      "converted.",
-     &MayaToEgg::dispatch_vector_string, nullptr, &_subroots);
+     &MayaToEggServer::dispatch_vector_string, nullptr, &_subroots);
 
   add_option
     ("subset", "name", 0,
@@ -150,7 +111,7 @@ MayaToEgg() :
      "like * or ?).  This parameter may be repeated multiple times to name "
      "multiple roots.  If it is omitted altogether, the entire file is "
      "converted.",
-     &MayaToEgg::dispatch_vector_string, nullptr, &_subsets);
+     &MayaToEggServer::dispatch_vector_string, nullptr, &_subsets);
 
   add_option
     ("exclude", "name", 0,
@@ -159,7 +120,7 @@ MayaToEgg() :
      "name matches the parameter (which may include globbing characters "
      "like * or ?).  This parameter may be repeated multiple times to name "
      "multiple roots.",
-     &MayaToEgg::dispatch_vector_string, nullptr, &_excludes);
+     &MayaToEggServer::dispatch_vector_string, nullptr, &_excludes);
 
   add_option
     ("ignore-slider", "name", 0,
@@ -168,25 +129,25 @@ MayaToEgg() :
      "and it will not become a part of the animation.  This "
      "parameter may including globbing characters, and it may be repeated "
      "as needed.",
-     &MayaToEgg::dispatch_vector_string, nullptr, &_ignore_sliders);
+     &MayaToEggServer::dispatch_vector_string, nullptr, &_ignore_sliders);
 
   add_option
     ("force-joint", "name", 0,
      "Specifies the name of a DAG node that maya2egg "
      "should treat as a joint, even if it does not appear to be a Maya joint "
      "and does not appear to be animated.",
-     &MayaToEgg::dispatch_vector_string, nullptr, &_force_joints);
+     &MayaToEggServer::dispatch_vector_string, nullptr, &_force_joints);
 
   add_option
     ("v", "", 0,
      "Increase verbosity.  More v's means more verbose.",
-     &MayaToEgg::dispatch_count, nullptr, &_verbose);
+     &MayaToEggServer::dispatch_count, nullptr, &_verbose);
 
   add_option
     ("legacy-shaders", "", 0,
      "Use this flag to turn off modern (Phong) shader generation"
      "and treat all shaders as if they were Lamberts (legacy).",
-     &MayaToEgg::dispatch_none, &_legacy_shader);
+     &MayaToEggServer::dispatch_none, &_legacy_shader);
 
   // Unfortunately, the Maya API doesn't allow us to differentiate between
   // relative and absolute pathnames--everything comes out as an absolute
@@ -197,14 +158,39 @@ MayaToEgg() :
   _verbose = 0;
   _polygon_tolerance = 0.01;
   _transform_type = MayaToEggConverter::TT_model;
-  _got_tbnall = true;
+  _got_tbnauto = true;
+  qManager = new QueuedConnectionManager();
+  qListener = new QueuedConnectionListener(qManager, 0);
+  qReader = new QueuedConnectionReader(qManager, 0);
+  cWriter = new ConnectionWriter(qManager, 0);
+  dummy = new MayaToEggConverter();
+
+  nout << "Initializing Maya...\n";
+  if (!dummy->open_api()) {
+    nout << "Unable to initialize Maya.\n";
+    exit(1);
+  }
+}
+/**
+ *
+ */
+MayaToEggServer::
+~MayaToEggServer() {
+  delete qManager;
+  delete qReader;
+  delete qListener;
+  delete cWriter;
+  delete dummy;
 }
 
 /**
  *
  */
-void MayaToEgg::
+void MayaToEggServer::
 run() {
+  // Make sure we have good clean data to start with
+  _data = new EggData();
+
   // Set the verbose level by using Notify.
   if (_verbose >= 3) {
     maya_cat->set_severity(NS_spam);
@@ -217,11 +203,6 @@ run() {
     mayaegg_cat->set_severity(NS_info);
   }
 
-  if (_legacy_copytex && !_path_replace->_copy_files) {
-    _path_replace->_copy_files = true;
-    _path_replace->_copy_into_directory = _legacy_copytex_dir;
-  }
-
   // Let's convert the output file to a full path before we initialize Maya,
   // since Maya now has a nasty habit of changing the current directory.
   if (_got_output_filename) {
@@ -229,14 +210,7 @@ run() {
     _path_replace->_path_directory.make_absolute();
   }
 
-  nout << "Initializing Maya.\n";
   MayaToEggConverter converter(_program_name);
-  // reverting directories is really not needed for maya2egg.  It's more
-  // needed for mayaeggloader and such
-  if (!converter.open_api(false)) {
-    nout << "Unable to initialize Maya.\n";
-    exit(1);
-  }
 
   // Copy in the command-line parameters.
   converter._polygon_output = _polygon_output;
@@ -244,8 +218,6 @@ run() {
   converter._respect_maya_double_sided = _respect_maya_double_sided;
   converter._always_show_vertex_color = !_suppress_vertex_color;
   converter._keep_all_uvsets = _keep_all_uvsets;
-  converter._convert_cameras = _convert_cameras;
-  converter._convert_lights = _convert_lights;
   converter._round_uvs = _round_uvs;
   converter._transform_type = _transform_type;
   converter._legacy_shader = _legacy_shader;
@@ -310,15 +282,53 @@ run() {
     _input_units = converter.get_input_units();
   }
 
+  // Add the command line comment at the top of the egg file
+  append_command_comment(_data);
+
   write_egg_file();
-  nout << "\n";
+
+  // Clean and out
+  close_output();
+  _verbose = 0;
+  _polygon_tolerance = 0.01;
+  _polygon_output = 0;
+  _transform_type = MayaToEggConverter::TT_model;
+  _subsets.clear();
+  _subroots.clear();
+  _input_units = DU_invalid;
+  _output_units = DU_invalid;
+  _excludes.clear();
+  _ignore_sliders.clear();
+  _force_joints.clear();
+  _got_transform = false;
+  _transform = LMatrix4d::ident_mat();
+  _normals_mode = NM_preserve;
+  _normals_threshold = 0.0;
+  _got_start_frame = false;
+  _got_end_frame = false;
+  _got_frame_inc = false;
+  _got_neutral_frame = false;
+  _got_input_frame_rate = false;
+  _got_output_frame_rate = false;
+  _got_output_filename = false;
+  _merge_externals = false;
+  _got_tbnall = false;
+  _got_tbnauto = false;
+  _got_transform = false;
+  _coordinate_system = CS_yup_right;
+  _noabs = false;
+  _program_args.clear();
+  _data->clear();
+  _animation_convert = AC_none;
+  _character_name = "";
+  dummy->clear();
 }
 
 /**
  * Dispatches a parameter that expects a MayaToEggConverter::TransformType
  * option.
  */
-bool MayaToEgg::
+bool MayaToEggServer::
 dispatch_transform_type(const std::string &opt, const std::string &arg, void *var) {
   MayaToEggConverter::TransformType *ip = (MayaToEggConverter::TransformType *)var;
   (*ip) = MayaToEggConverter::string_transform_type(arg);
@@ -332,9 +342,133 @@ dispatch_transform_type(const std::string &opt, const std::string &arg, void *va
   return true;
 }
 
+/**
+ * Checks for any network activity and handles it, if appropriate, and then
+ * returns.  This must be called periodically
+ */
+void MayaToEggServer::
+poll() {
+  // Listen for new connections
+  qListener->poll();
+
+  // If we have a new connection from a client create a new connection pointer
+  // and add it to the reader list
+  if (qListener->new_connection_available()) {
+    PT(Connection) con;
+    PT(Connection) rv;
+    NetAddress address;
+    if (qListener->get_new_connection(rv, address, con)) {
+      qReader->add_connection(con);
+      _clients.insert(con);
+    }
+  }
+
+  // Check for reset clients
+  if (qManager->reset_connection_available()) {
+    PT(Connection) connection;
+    if (qManager->get_reset_connection(connection)) {
+      _clients.erase(connection);
+      qManager->close_connection(connection);
+    }
+  }
+
+  // Poll the readers (created above) and if they have data process it
+  qReader->poll();
+  if (qReader->data_available()) {
+    // Grab the incomming data and unpack it
+    NetDatagram datagram;
+    if (qReader->get_data(datagram)) {
+      DatagramIterator data(datagram);
+      // First data should be the "argc" (argument count) from the client
+      int argc = data.get_uint8();
+
+      // Now we have to get clever because the rest of the data comes as
+      // strings and parse_command_line() expects arguments of the standard
+      // argc, argv*[] variety.  First, we need a string vector to hold all
+      // the strings from the datagram.  We also need a char * array to keep
+      // track of all the pointers we're gonna malloc.  Needed later for
+      // cleanup.
+      vector_string vargv;
+      std::vector<char *> buffers;
+
+      // Get the strings from the datagram and put them into the string vector
+      int i;
+      for ( i = 0; i < argc; i++ ) {
+        vargv.push_back(data.get_string());
+      }
+
+      // Last string is the current directory the client was run from.  Not
+      // part of the argument list, but we still need it
+      std::string cwd = data.get_string();
+
+      // We allocate some memory to hold the pointers to the pointers we're
+      // going to pass in to parse_command_line().
+      char ** cargv = (char**) malloc(sizeof(char**) * argc);
+
+      // Loop through the string arguments we got from the datagram and
+      // convert them to const char *'s.  parse_command_line() expects char
+      // *'s, so we have to copy these const versions into fresh char *, since
+      // there is no casting from const char * to char *.
+      for ( i = 0; i < argc; i++) {
+        // string to const char *
+        const char * cptr = vargv[i].c_str();
+        // memory allocated for a new char * of size of the string
+        char * buffer = (char*) malloc(vargv[i].capacity()+1);
+        // Copy the const char * to the char *
+        strcpy(buffer, cptr);
+        // put this into the arry we defined above.  This is what will
+        // eventually be passed to parse_command_line()
+        cargv[i] = buffer;
+        // keep track of the pointers to the  allocated memory for cleanup
+        // later
+        buffers.push_back(buffer);
+      }
+      // Change to the client's current dir
+#ifdef _WIN64
+      _chdir(cwd.c_str());
+#else
+      chdir(cwd.c_str());
+#endif
+
+      // Pass in the 'new' argc and argv we got from the client
+      this->parse_command_line(argc, cargv);
+      // Actually run the damn thing
+      this->run();
+
+      // Cleanup First, release the string vector
+      vargv.clear();
+      // No, iterate through the char * vector and cleanup the malloc'd
+      // pointers
+      std::vector<char *>::iterator vi;
+      for ( vi = buffers.begin() ; vi != buffers.end(); vi++) {
+        free(*vi);
+      }
+      // Clean up the malloc'd pointer pointer
+      free(cargv);
+    } // qReader->get_data
+
+    Clients::iterator ci;
+    for (ci = _clients.begin(); ci != _clients.end(); ++ci) {
+      qManager->close_connection(*ci);
+    }
+  } // qReader->data_available
+} // poll
+
 int main(int argc, char *argv[]) {
-  MayaToEgg prog;
-  prog.parse_command_line(argc, argv);
-  prog.run();
+  MayaToEggServer prog;
+  // Open a rendezvous port for receiving new connections from the client
+  PT(Connection) rend = prog.qManager->open_TCP_server_rendezvous(4242, 50);
+  if (rend.is_null()) {
+    nout << "port opened fail";
+  }
+
+  // Add this connection to the listeners list
+  prog.qListener->add_connection(rend);
+
+  // Main loop.  Keep polling for connections, but don't eat up all the CPU.
+  while (true) {
+    prog.poll();
+    Thread::force_yield();
+  }
   return 0;
 }
