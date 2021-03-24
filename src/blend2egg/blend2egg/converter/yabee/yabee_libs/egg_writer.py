@@ -5,6 +5,8 @@ from pathlib import Path
 from mathutils import *
 from math import pi
 
+from .texture_processor import PbrTextures
+
 from .utils import *
 import sys
 import subprocess
@@ -12,6 +14,7 @@ import importlib
 from traceback import print_exc
 
 lib_name = '.'.join(__name__.split('.')[:-1])
+importlib.reload(sys.modules[lib_name + '.texture_processor'])
 importlib.reload(sys.modules[lib_name + '.utils'])
 
 FILE_PATH = None
@@ -23,13 +26,15 @@ MERGE_ACTOR_MESH = None
 APPLY_MOD = None
 APPLY_COLL_TAG = None
 FORCE_EXPORT_VERTEX_COLORS = False
-USE_LOOP_NORMALS = False
+USE_LOOP_NORMALS = True
 STRF = lambda x: '%.6f' % x
 USED_MATERIALS = None
+USED_TEXTURES = None
 CHAR_NAME = None
 IS_ANIM_EXPORT = False
 ANIM_TYPE = None
 COORDINATE_SYSTEM = None
+TEXTURE_PROCESSOR = 'BAKE'
 
 # const used to pack string array into StringProperty
 NAME_SEPARATOR = "\1"
@@ -441,22 +446,10 @@ class EGGMeshObjectData(EGGBaseObjectData):
         """
         vtx_list = []
         for i, f in enumerate(self.obj_ref.data.polygons):
-            if f.use_smooth:
-                for v in self.poly_vtx_ref[i]:
-                    vtx_list.append(v)
+            for v in self.poly_vtx_ref[i]:
+                vtx_list.append(v)
         vtx_list = set(vtx_list)
 
-        # TODO: Fix me!
-        if self.obj_ref.data.use_auto_smooth:
-            sharp_edges = [e.key for e in self.obj_ref.data.edges if e.use_edge_sharp]
-            for i, f in enumerate(self.obj_ref.data.polygons):
-                for e in f.edge_keys:
-                    if e in sharp_edges:
-                        for ev in e:
-                            ei = list(f.vertices).index(ev)
-                            iv = self.poly_vtx_ref[i][ei]
-                            if iv in vtx_list:
-                                vtx_list.remove(iv)
         return vtx_list
 
     def pre_convert_uvs(self):
@@ -594,7 +587,7 @@ class EGGMeshObjectData(EGGBaseObjectData):
         """
         if idx in self.smooth_vtx_list:
 
-            no = self.obj_ref.matrix_world.to_euler().to_matrix() @ self.obj_ref.data.vertices[v].normal
+            no = self.obj_ref.rotation_euler.to_matrix() @ self.obj_ref.data.vertices[v].normal
             # no = self.obj_ref.data.vertices[v].normal
             # no = self.obj_ref.data.loops[idx].normal
             attributes.append('  <Normal> { %f %f %f }' % no[:])
@@ -610,7 +603,7 @@ class EGGMeshObjectData(EGGBaseObjectData):
         @return: list of vertex attributes.
         """
         if idx in self.smooth_vtx_list:
-            no = self.obj_ref.matrix_world.to_euler().to_matrix() @ self.obj_ref.data.loops[
+            no = self.obj_ref.rotation_euler.to_matrix() @ self.obj_ref.data.loops[
                 self.map_vertex_to_loop[v]].normal
             attributes.append('  <Normal> { %f %f %f }' % no[:])
         return attributes
@@ -673,8 +666,12 @@ class EGGMeshObjectData(EGGBaseObjectData):
 
         if USE_LOOP_NORMALS and self.obj_ref.data.has_custom_normals:
             print("INFO: Custom normals detected")
-            self.map_vertex_to_loop = {self.obj_ref.data.loops[lidx].vertex_index: lidx
-                                       for p in self.obj_ref.data.polygons for lidx in p.loop_indices}
+            self.map_vertex_to_loop = {}
+            for p in self.obj_ref.data.polygons:
+                for lidx in p.loop_indices:
+                    vidx = self.obj_ref.data.loops[lidx].vertex_index
+                    self.map_vertex_to_loop[vidx] = lidx
+
             normal = self.collect_vtx_normal_from_loop
         else:
             normal = self.collect_vtx_normal
@@ -699,6 +696,84 @@ class EGGMeshObjectData(EGGBaseObjectData):
 
     # -------------------------------------------------------------------
     #                           POLYGONS
+
+    def collect_poly_tref(self, face, attributes):
+        """ Add <TRef> to the polygon's attributes list.
+        @param face: face index.
+        @param attributes: list of polygon's attributes.
+        @return: list of polygon's attributes.
+        """
+        global USED_TEXTURES, TEXTURE_PROCESSOR
+        if TEXTURE_PROCESSOR in 'BAKE':
+            # Store all texture references here. It is important that this is a list
+            # so the texture order is preserved.
+            textures = []
+
+            # Find the material assigned to that polygon:
+            # First, check if that polygon has a material at all
+            material = None
+            matIsFancyPBRNode = False
+            if face.material_index < len(self.obj_ref.data.materials):
+                material = self.obj_ref.data.materials[face.material_index]
+
+            if material:
+                if material.use_nodes:
+                    nodeTree = material.node_tree
+                    if nodeTree.nodes:
+                        matIsFancyPBRNode = True
+
+                        if matIsFancyPBRNode:
+                            # we need to find a couple of textures here
+                            # we do need an empty for specular but it's added somewhere else
+                            nodeNames = {"Base Color": None,
+                                         "Roughness": None,
+                                         "Normal": None,
+                                         "Specular": None}
+                            # let's crawl all links, find the ones connected to the Principled BSDF,
+                            for link in material.node_tree.links:
+                                # if the link connects to the Principled BSDF node
+                                # and it connects to one of our known sockets...
+                                if link.to_node.name == "Principled BSDF":
+                                    if link.to_socket.name in nodeNames.keys():
+                                        # If normal map texture is connected through NormalMap node
+                                        if link.from_node.name == "Normal Map":
+                                            textureNode = link.from_node.inputs[1].links[0].from_node
+                                        else:
+                                            textureNode = link.from_node
+
+                                        # we have to find the texture name here.
+                                        nodeNames[link.to_socket.name] = textureNode.name
+
+                            for x in ["Base Color",
+                                      "Roughness",
+                                      "Normal",
+                                      "Specular"]:
+                                tex = nodeNames[x]
+                                if tex:
+                                    textures.append(tex)
+
+                    else:
+                        # The object has no material, that means it will get no textures
+                        print("WARNING: Object", self.obj_ref.name, "has no material assigned!")
+
+                    # Store all textures
+                    for tex_name in textures:
+                        if tex_name in USED_TEXTURES:
+                            # Make sure that  we'll have this texture in header
+                            # #todo:add this back once empties are added for PBR nodes
+                            attributes.append('<TRef> { %s }' % eggSafeName(tex_name))
+
+                else:
+                    if self.obj_ref.data.uv_layers and material.use_nodes:
+                        for btype, params in BAKE_LAYERS.items():
+                            if len(params) == 2:
+                                params = (params[0], params[0], params[1])
+                            if params[2]:
+                                attributes.append('<TRef> { %s }' \
+                                                  % eggSafeName(self.obj_ref.yabee_name \
+                                                                + '_' + btype))
+
+        return attributes
 
     def collect_poly_mref(self, face, attributes):
         """ Add <MRef> to the polygon's attributes list.
@@ -766,15 +841,19 @@ class EGGMeshObjectData(EGGBaseObjectData):
     def collect_polygons(self):
         """ Convert and collect polygons info
         """
+        tref = self.collect_poly_tref
         mref = self.collect_poly_mref
-        normal = self.collect_poly_normal
+        #normal = self.collect_poly_normal
         rgba = self.collect_poly_rgba
+        bface = self.collect_poly_bface
         vertexref = self.collect_poly_vertexref
         polygons = []
         for f in self.obj_ref.data.polygons:
             attributes = []
+            tref(f, attributes)
             mref(f, attributes)
-            normal(f, attributes)
+            #normal(f, attributes)
+            bface(f, attributes)
             rgba(f, attributes)
             vertexref(f, attributes)
             poly = '<Polygon> {\n  %s \n}\n' % ('\n  '.join(attributes),)
@@ -1107,21 +1186,183 @@ def get_egg_materials_str(object_names=None):
     if not used_materials:
         used_materials = ''
 
+    print('INFO: Used materials: ', used_materials)
+
+    containsPBRNodes = False
     for m_idx in used_materials:
         mat = bpy.data.materials[m_idx]
+        mat_str += '<Material> %s {\n' % eggSafeName(mat.yabee_name)
+        # MARK
 
-        pmat_file = mat.get("pmat_file")
-        if not pmat_file:
-            print("WARNING: Used material " + mat.name + " does not contain a "
-                  "pmat_file property!")
-        else:
-            print("Mapping material %s to %s" % (mat.name, pmat_file))
-            mat_str += '<Material> %s {\n' % mat.name
-            mat_str += '  "' + pmat_file + '"\n'
-            mat_str += '}\n'
+        matIsFancyPBRNode = False
+        matFancyType = 0
+        nodeTree = None
+        if mat.use_nodes:
+            nodeTree = mat.node_tree
+            if nodeTree.nodes:
+                matIsFancyPBRNode = True
+                containsPBRNodes = True
+                matFancyType = 0
 
-    return mat_str, used_materials
+        if matIsFancyPBRNode:
+            if matFancyType == 0:
+                objects = bpy.context.selected_objects
 
+                # Skip it due to issue https://developer.blender.org/T75888
+                if bpy.data.materials[m_idx].name == "Dots Stroke":
+                    print("WARNING: Can't export scene. Cancelled."
+                          "Please remove Dots Stroke material in the Blender File Mode first!\n\n")
+                    break
+
+                for node in bpy.data.materials[m_idx].node_tree.nodes:
+                    if node.name == "Principled BSDF":
+                        principled_bsdf = node
+                        if not principled_bsdf.inputs["Base Color"].is_linked:
+                            basecol = list(principled_bsdf.inputs["Base Color"].default_value)
+                        else:
+                            basecol = [1, 1, 1, 1]
+
+                        if not principled_bsdf.inputs["Emission"].is_linked:
+                            emission = list(principled_bsdf.inputs["Emission"].default_value)
+                        else:
+                            emission = [0, 0, 0, 0]
+
+                        if not principled_bsdf.inputs["Specular"].is_linked:
+                            specular = principled_bsdf.inputs["Specular"].default_value
+                        else:
+                            specular = principled_bsdf.inputs["Specular"].default_value
+
+                        if specular > 0.2:
+                            specular = 0.2
+
+                        if not principled_bsdf.inputs["Metallic"].is_linked:
+                            metallic = principled_bsdf.inputs["Metallic"].default_value
+                        else:
+                            metallic = principled_bsdf.inputs["Metallic"].default_value
+
+                        if metallic > 0.5:
+                            metallic = 0.5
+
+                        if not principled_bsdf.inputs["Roughness"].is_linked:
+
+                            roughness = principled_bsdf.inputs["Roughness"].default_value
+                        else:
+                            roughness = 0
+
+                        if not principled_bsdf.inputs["IOR"].is_linked:
+                            ior = principled_bsdf.inputs["IOR"].default_value
+                        else:
+                            ior = principled_bsdf.inputs["IOR"].default_value
+
+                        normal_map_bump_factor = 0
+                        if principled_bsdf.inputs["Normal"].is_linked:
+                            if principled_bsdf.inputs["Normal"].links[0].from_node.name == "Normal Map":
+                                normal_map_node = principled_bsdf.inputs["Normal"].links[0].from_node
+                                if normal_map_node.inputs[0].name == "Strength":
+                                    normal_map_bump_factor = normal_map_node.inputs["Strength"].default_value
+
+                        transmission = principled_bsdf.inputs['Transmission'].default_value
+
+                        clearcoat = principled_bsdf.inputs['Clearcoat'].default_value
+
+                        base_r = basecol[0]
+                        base_g = basecol[1]
+                        base_b = basecol[2]
+                        # base_a = basecol[3]
+
+                        emit_r = emission[0]
+                        emit_g = normal_map_bump_factor
+                        emit_b = emission[2]
+                        emit_a = emission[3]
+
+                        # Apply RenderPipeline SHADING_MODEL_TRANSPARENT 2;
+                        if clearcoat == 1.0:
+                            emit_r = 2
+
+                        # Apply RenderPipeline SHADING_MODEL_CLEARCOAT 3
+                        if transmission == 1.0 and metallic == 1.0:
+                            emit_r = 3
+
+                        # Apply RenderPipeline SHADING_MODEL_SKIN 4
+                        if specular < 0.5 and ior < 1.0:
+                            emit_r = 4
+
+                        # Apply RenderPipeline SHADING_MODEL_FOILAGE 5
+                        if specular < 0.5 and ior > 1.0:
+                            emit_r = 5
+
+                        mat_str += '  <Scalar> baser { %s }\n' % str(base_r)
+                        mat_str += '  <Scalar> baseg { %s }\n' % str(base_g)
+                        mat_str += '  <Scalar> baseb { %s }\n' % str(base_b)
+                        # mat_str += '  <Scalar> basea { %s }\n' % str(base_a)
+
+                        mat_str += '  <Scalar> emitr { %s }\n' % str(emit_r)
+                        mat_str += '  <Scalar> emitg { %s }\n' % str(emit_g)
+                        mat_str += '  <Scalar> emitb { %s }\n' % str(emit_b)
+                        mat_str += '  <Scalar> emita { %s }\n' % str(emit_a)
+
+                        mat_str += '  <Scalar> shininess { %s }\n' % str(specular)
+
+                        mat_str += '  <Scalar> roughness { %s }\n' % str(roughness)
+                        mat_str += '  <Scalar> metallic { %s }\n' % str(metallic)
+                        mat_str += '  <Scalar> ior { %s }\n' % str(ior)
+                        mat_str += '  <Scalar> local { %s }\n' % str(0)
+
+        if matIsFancyPBRNode is False:
+            print("INFO: Non-Shader Mode is using for!")
+            if matFancyType == 0:
+                for m_val in used_materials:
+                    mat = bpy.data.materials[m_val]
+                    if mat.use_nodes is False:
+                        color = mat.diffuse_color
+                        basecol = list(color)
+                        base_r = basecol[0]
+                        base_g = basecol[1]
+                        base_b = basecol[2]
+                        # diff_a = diffcol[3]
+
+                        mat_str += '  <Scalar> baser { %s }\n' % str(base_r)
+                        mat_str += '  <Scalar> baseg { %s }\n' % str(base_g)
+                        mat_str += '  <Scalar> baseb { %s }\n' % str(base_b)
+                        # mat_str += '  <Scalar> basea { %s }\n' % STRF(base_a)
+                        mat_str += '  <Scalar> roughness { %s }\n' % str(mat.roughness)
+                        mat_str += '  <Scalar> metallic { %s }\n' % str(mat.metallic)
+                        mat_str += '  <Scalar> local { %s }\n' % str(0)
+
+        mat_str += '}\n\n'
+
+    used_textures = {}
+
+    if containsPBRNodes:
+        print("Found Panda3D compatible Principled BSDF shader. Collecting PBR textures")
+        pbrtex = PbrTextures(objects,
+                             False,
+                             False,
+                             FILE_PATH, FILE_PATH)
+        used_textures.update(pbrtex.get_used_textures())
+
+    else:
+        print("Panda3D compatible Principled BSDF shader not found, See Manual to create it first...")
+
+    """if TEXTURE_PROCESSOR == 'BAKE':
+        tb = TextureBaker(objects, FILE_PATH, TEX_PATH)
+        used_textures.update(tb.bake(BAKE_LAYERS))"""
+
+    for name, params in used_textures.items():
+        mat_str += '<Texture> %s {\n' % eggSafeName(name)
+        mat_str += '  "' + convertFileNameToPanda(params['path']) + '"\n'
+
+        for scalar in params['scalars']:
+            mat_str += ('  <Scalar> %s { %s }\n' % scalar)
+
+        if 'transform' in params and len(params['transform']) > 0:
+            mat_str += '  <Transform> {\n'
+            for ttype, transform in params['transform']:
+                transform = ' '.join(map(str, transform))
+                mat_str += '    <%s> { %s }\n' % (ttype, transform)
+            mat_str += '  }\n'
+        mat_str += '}\n\n'
+    return mat_str, used_materials, used_textures
 
 # -----------------------------------------------------------------------
 #                   Preparing & auxiliary functions
@@ -1258,7 +1499,7 @@ def write_out(fname, anim, anim_type,
         STRF, CALC_TBS, AUTOSELECT, APPLY_OBJ_TRANSFORM, \
         MERGE_ACTOR_MESH, APPLY_MOD, APPLY_COLL_TAG, USED_MATERIALS, \
         USE_LOOP_NORMALS, FORCE_EXPORT_VERTEX_COLORS, IS_ANIM_EXPORT, \
-        CHAR_NAME, ANIM_TYPE, COORDINATE_SYSTEM
+        CHAR_NAME, ANIM_TYPE, COORDINATE_SYSTEM, USED_TEXTURES
     importlib.reload(sys.modules[lib_name + '.utils'])
     errors = []
     # === prepare to write ===
@@ -1360,20 +1601,15 @@ def write_out(fname, anim, anim_type,
                     if obj.yabee_name in selected_obj]
         if not IS_ANIM_EXPORT:
             if USE_LOOP_NORMALS:
-                for old, new in zip(precopy_obj_list, obj_list):
-                    if old.type != "MESH":
+                for obj in obj_list:
+                    if obj.type != "MESH":
                         continue
                     print("{} has custom normals!".format(
-                        old.name) if old.data.has_custom_normals else "{} has no custom normals.".format(old.name))
-                    bpy.context.view_layer.objects.active = new
-                    bpy.ops.object.modifier_add(type='DATA_TRANSFER')
-                    bpy.context.object.modifiers["DataTransfer"].object = old
-                    bpy.context.object.modifiers["DataTransfer"].use_loop_data = True
-                    # bpy.context.object.modifiers["DataTransfer"].loop_mapping = 'POLYINTERP_LNORPROJ'
-                    bpy.context.object.modifiers["DataTransfer"].loop_mapping = 'TOPOLOGY'
-                    bpy.context.object.modifiers["DataTransfer"].data_types_loops = {'CUSTOM_NORMAL'}
-                    bpy.ops.object.modifier_apply(apply_as='DATA', modifier="DataTransfer")
-                    new.data.calc_normals_split()
+                        obj.name) if obj.data.has_custom_normals else "{} has no custom normals.".format(obj.name))
+                    bpy.context.view_layer.objects.active = obj
+                    obj.data.calc_normals_split()
+                    obj.data.split_faces(free_loop_normals=True)
+
             if CALC_TBS == 'BLENDER':
                 for obj in obj_list:
 
@@ -1438,7 +1674,7 @@ def write_out(fname, anim, anim_type,
                     up_axis = COORDINATE_SYSTEM.upper()
                 file.write('<CoordinateSystem> { %s-up } \n' % up_axis)
                 if selected_obj:
-                    materials_str, USED_MATERIALS = get_egg_materials_str(selected_obj)
+                    materials_str, USED_MATERIALS, USED_TEXTURES = get_egg_materials_str(selected_obj)
                     file.write(materials_str)
                     file.write(gr.get_full_egg_str())
                 else:

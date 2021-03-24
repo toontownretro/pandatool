@@ -8,6 +8,7 @@
   blend2egg/converter/yabee/__init__.py \
   blend2egg/converter/yabee/yabee_libs/__init__.py \
   blend2egg/converter/yabee/yabee_libs/egg_writer.py \
+  blend2egg/converter/yabee/yabee_libs/texture_processor.py \
   blend2egg/converter/yabee/yabee_libs/utils.py \
   blend2egg/__init__.py \
   blend2egg/blender_script_common.py \
