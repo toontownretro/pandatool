@@ -568,6 +568,8 @@ class EGGMeshObjectData(EGGBaseObjectData):
                 and (len(self.obj_ref.data.shape_keys.key_blocks) > 1)):
             for i in range(1, len(self.obj_ref.data.shape_keys.key_blocks)):
                 key = self.obj_ref.data.shape_keys.key_blocks[i]
+                if vidx >= len(key.data):
+                    continue
                 vtx = self.obj_ref.data.vertices[vidx]
                 co = key.data[vidx].co @ self.obj_ref.matrix_world - \
                      vtx.co @ self.obj_ref.matrix_world
@@ -620,14 +622,14 @@ class EGGMeshObjectData(EGGBaseObjectData):
                 # Write out vertex colors if no material applied
                 col = self.colors_vtx_ref[vidx]
                 attributes.append('  <RGBA> { %f %f %f %f }' % col[:])
-        else:
-            # if material has no texture:
-            for mat in self.obj_ref.data.materials:
-                nodeTree = mat.node_tree
-                if nodeTree.nodes:
-                    for pandaShaderNode in nodeTree.links:
-                        if pandaShaderNode.to_node.name == "Material Output":
-                            attributes.append('  <RGBA> { 1 1 1 1 }')
+        #else:
+        #    # if material has no texture:
+        #    for mat in self.obj_ref.data.materials:
+        #        nodeTree = mat.node_tree
+        #        if nodeTree.nodes:
+        #            for pandaShaderNode in nodeTree.links:
+        #                if pandaShaderNode.to_node.name == "Material Output":
+        #                    attributes.append('  <RGBA> { 1 1 1 1 }')
         return attributes
 
     def collect_vtx_uv(self, vidx, ividx, attributes):
