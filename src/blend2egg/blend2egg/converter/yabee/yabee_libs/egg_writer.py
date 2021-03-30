@@ -193,6 +193,15 @@ class Group:
                             egg_str.append('%s<Distance> { %f %f <Vertex> { 0 0 0 } }\n' % ('  ' * (level + 2), far_distance, near_distance))
                             egg_str.append('%s}\n' % ('  ' * (level + 1)))
 
+                    # Any egg object flags?
+                    egg_object_flags = self.object.get('egg_object_flags')
+                    if egg_object_flags is not None:
+                        # It should be a semicolon separated list of object
+                        # types.
+                        flags = egg_object_flags.split(';')
+                        for flag in flags:
+                            egg_str.append('%s<ObjectType> { %s }\n' % ('  ' * level, flag))
+
                     #if (self.object.type == 'MESH'
                     #        and (self.object.data.shape_keys
                     #             and len(self.object.data.shape_keys.key_blocks) > 1)):
