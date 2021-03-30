@@ -18,7 +18,7 @@
 #include "load_egg_file.h"
 #include "config_egg2pg.h"
 #include "config_gobj.h"
-#include "config_chan.h"
+#include "config_anim.h"
 #include "pandaNode.h"
 #include "geomNode.h"
 #include "renderState.h"
@@ -34,6 +34,9 @@
 #include "datagramIterator.h"
 #include "datagram.h"
 #include "virtualFileSystem.h"
+#include "modelIndex.h"
+#include "material.h"
+#include "materialAttrib.h"
 
 /**
  *
@@ -119,7 +122,16 @@ EggToBam() :
      "one of 'y-up', 'z-up', 'y-up-left', or 'z-up-left'.  The default "
      "is z-up.");
 
+  add_option
+    ("i", "filename", 0,
+     "Specify the model index filename for the model tree that the model and "
+     "its referenced textures/materials reside in.  This is used to remap the "
+     "texture pathnames to the built/installed versions and make them relative "
+     "to the root installation directory.",
+     &EggToBam::dispatch_filename, &_got_index_filename, &_index_filename);
+
   _force_complete = true;
+  _got_index_filename = false;
   _egg_flatten = 0;
   _egg_combine_geoms = 0;
   _egg_suppress_hidden = 1;
@@ -160,30 +172,79 @@ run() {
     _data->set_coordinate_system(CS_zup_right);
   }
 
+  ModelIndex *index = ModelIndex::get_global_ptr();
+  if (_got_index_filename) {
+    if (!index->read_index(_index_filename)) {
+      nout << "Failed to read model tree index: " << _index_filename << "\n";
+      exit(1);
+    }
+  }
+
+  if (index->get_num_trees() == 0) {
+    nout << "There is no model tree index!\n";
+    exit(1);
+  }
+
   PT(PandaNode) root = load_egg_data(_data);
   if (root == nullptr) {
     nout << "Unable to build scene graph from egg file.\n";
     exit(1);
   }
 
-  // Collect all of the RenderStates with filename references.  We need to go
-  // through and remap all of the filenames to point to where the installed
-  // .rso files should be.
+  // Collect all the materials and textures from the RenderStates.  We need to
+  // remap the filenames to the install tree.
   collect_materials(root);
-  DSearchPath remap_path;
-  remap_path.append_directory(".");
+
+  ModelIndex::Tree *tree = index->get_tree(index->get_num_trees() - 1);
+  ModelIndex::AssetIndex *mat_assets = tree->_asset_types["materials"];
+  ModelIndex::AssetIndex *tex_assets = tree->_asset_types["textures"];
+
   for (auto it = _materials.begin(); it != _materials.end(); ++it) {
-    const RenderState *state = *it;
+    Material *mat = *it;
 
-    Filename mat_fullpath = state->get_fullpath();
-    mat_fullpath.set_extension("rso");
+    auto mit = mat_assets->_assets.find(mat->get_filename().get_basename_wo_extension());
+    if (mit == mat_assets->_assets.end()) {
+      nout << "Material " << mat->get_filename()
+           << " does not exist in the model index!  Add it to a Sources.pp file.\n";
+      exit(1);
+    }
 
-    Filename rso_resolved, rso_output;
-    _path_replace->full_convert_path(
-      mat_fullpath, remap_path, rso_resolved, rso_output);
+    ModelIndex::Asset *mat_asset = (*mit).second;
 
-    state->_filename = rso_output;
-    state->_fullpath = rso_resolved;
+    nout << "Remapping material " << mat->get_filename() << " to " << mat_asset->_built << "\n";
+
+    Filename rel_path = mat_asset->_built;
+    rel_path.make_canonical();
+    rel_path.make_relative_to(tree->_install_dir, false);
+    mat->set_filename(rel_path);
+    mat->set_fullpath(mat_asset->_built);
+  }
+
+  // Also remap any textures that are part of a RenderState that didn't come
+  // from a .pmat.
+  for (auto it = _textures.begin(); it != _textures.end(); ++it) {
+    Texture *tex = *it;
+
+    auto ti = tex_assets->_assets.find(tex->get_filename().get_basename_wo_extension());
+    if (ti == tex_assets->_assets.end()) {
+      nout << "Texture " << tex->get_filename()
+           << " does not exist in the model index!  Add it to a Sources.pp file.\n";
+      exit(1);
+    }
+
+    ModelIndex::Asset *tex_asset = (*ti).second;
+
+    nout << "Remapping texture " << tex->get_filename() << " to " << tex_asset->_built << "\n";
+
+    Filename rel_path = tex_asset->_built;
+    rel_path.make_canonical();
+    rel_path.make_relative_to(tree->_install_dir, false);
+    tex->set_filename(rel_path);
+    tex->set_fullpath(tex_asset->_built);
+
+    if (tex_asset->_built.get_extension() == "txo") {
+      tex->set_loaded_from_txo();
+    }
   }
 
   if (_ls) {
@@ -219,7 +280,7 @@ handle_args(ProgramBase::Args &args) {
   // If the user specified a path store option, we need to set the bam-
   // texture-mode Config.prc variable directly to support this (otherwise the
   // bam code will do what it wants to do anyway).
-  if (_got_path_store) {
+  if (true || _got_path_store) {
     bam_texture_mode = BamFile::BTM_unchanged;
     bam_material_mode = BamFile::BTM_unchanged;
 
@@ -238,18 +299,38 @@ handle_args(ProgramBase::Args &args) {
  */
 void EggToBam::
 collect_materials(PandaNode *node) {
-  const RenderState *node_state = node->get_state();
-  if (!node_state->get_filename().empty()) {
-    _materials.insert(node_state);
+  const RenderState *state = node->get_state();
+
+  const MaterialAttrib *mattr;
+  state->get_attrib_def(mattr);
+  Material *mat = mattr->get_material();
+  if (!mattr->is_off() && mat != nullptr && !mat->get_filename().empty()) {
+    _materials.insert(mat);
+  }
+
+  const TextureAttrib *ta;
+  state->get_attrib_def(ta);
+  for (size_t i = 0; i < ta->get_num_on_stages(); i++) {
+    Texture *tex = ta->get_on_texture(ta->get_on_stage(i));
+    _textures.insert(tex);
   }
 
   if (node->is_geom_node()) {
     GeomNode *geom_node = DCAST(GeomNode, node);
     int num_geoms = geom_node->get_num_geoms();
     for (int i = 0; i < num_geoms; ++i) {
-      const RenderState *geom_state = geom_node->get_geom_state(i);
-      if (!geom_state->get_filename().empty()) {
-        _materials.insert(geom_state);
+      state = geom_node->get_geom_state(i);
+
+      state->get_attrib_def(mattr);
+      mat = mattr->get_material();
+      if (!mattr->is_off() && mat != nullptr && !mat->get_filename().empty()) {
+        _materials.insert(mat);
+      }
+
+      state->get_attrib_def(ta);
+      for (size_t i = 0; i < ta->get_num_on_stages(); i++) {
+        Texture *tex = ta->get_on_texture(ta->get_on_stage(i));
+        _textures.insert(tex);
       }
     }
   }

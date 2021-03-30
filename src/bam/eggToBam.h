@@ -21,7 +21,7 @@
 #include "graphicsPipe.h"
 
 class PandaNode;
-class RenderState;
+class Material;
 class Texture;
 class GraphicsEngine;
 class GraphicsStateGuardian;
@@ -43,8 +43,15 @@ private:
   void collect_materials(PandaNode *node);
 
 private:
-  typedef pset<const RenderState *> Materials;
+  // This is the set of all materials referenced by the egg file that need to
+  // remapped to their installed counterpart.
+  typedef pset<Material *> Materials;
   Materials _materials;
+
+  // We might also have textures applied directly onto the RenderState, and we
+  // also need to remap those.
+  typedef pset<Texture *> Textures;
+  Textures _textures;
 
   bool _has_egg_flatten;
   int _egg_flatten;
@@ -55,6 +62,8 @@ private:
   bool _has_compression_quality;
   int _compression_quality;
   bool _compression_off;
+  bool _got_index_filename;
+  Filename _index_filename;
 };
 
 #endif
