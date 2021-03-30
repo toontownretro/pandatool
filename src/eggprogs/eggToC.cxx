@@ -99,6 +99,7 @@ run() {
     nout << "  (" << num_produced << " triangles produced.)\n";
   }
 
+  _data->apply_texmats();
   _data->flatten_transforms();
   _data->remove_unused_vertices(true);
 

@@ -14,6 +14,7 @@
 #include "eggBase.h"
 
 #include "eggGroupNode.h"
+#include "eggTexture.h"
 #include "eggFilenameNode.h"
 #include "eggComment.h"
 #include "dcast.h"
@@ -37,6 +38,7 @@ EggBase() {
   _normals_threshold = 0.0;
 
   _got_tbnall = false;
+  _got_tbnauto = false;
   _make_points = false;
 
   _got_transform = false;
@@ -97,6 +99,11 @@ add_normals_options() {
      "Compute tangent and binormal for all texture coordinate "
      "sets.  This is equivalent to -tbn \"*\".",
      &EggBase::dispatch_none, &_got_tbnall);
+
+  add_option
+    ("tbnauto", "", 48,
+     "Compute tangent and binormal for all normal maps. ",
+     &EggBase::dispatch_none, &_got_tbnauto);
 }
 
 /**
@@ -150,7 +157,23 @@ add_transform_options() {
 void EggBase::
 convert_paths(EggNode *node, PathReplace *path_replace,
               const DSearchPath &additional_path) {
-  if (node->is_of_type(EggFilenameNode::get_class_type())) {
+  if (node->is_of_type(EggTexture::get_class_type())) {
+    EggTexture *egg_tex = DCAST(EggTexture, node);
+    Filename fullpath, outpath;
+    path_replace->full_convert_path(egg_tex->get_filename(), additional_path,
+                                    fullpath, outpath);
+    egg_tex->set_filename(outpath);
+    egg_tex->set_fullpath(fullpath);
+
+    if (egg_tex->has_alpha_filename()) {
+      Filename alpha_fullpath, alpha_outpath;
+      path_replace->full_convert_path(egg_tex->get_alpha_filename(), additional_path,
+                                      alpha_fullpath, alpha_outpath);
+      egg_tex->set_alpha_filename(alpha_outpath);
+      egg_tex->set_alpha_fullpath(alpha_fullpath);
+    }
+
+  } else if (node->is_of_type(EggFilenameNode::get_class_type())) {
     EggFilenameNode *egg_fnode = DCAST(EggFilenameNode, node);
 
     Filename fullpath, outpath;

@@ -16,6 +16,7 @@
 
 #include "pandatoolbase.h"
 
+#include "eggTexture.h"
 #include "typedWritable.h"
 
 class PNMFileType;
@@ -28,47 +29,6 @@ class FactoryParams;
  */
 class TextureProperties : public TypedWritable {
 public:
-  enum Format {
-    F_unspecified,
-    F_rgba, F_rgbm, F_rgba12, F_rgba8, F_rgba4, F_rgba5,
-    F_rgb, F_rgb12, F_rgb8, F_rgb5, F_rgb332,
-    F_red, F_green, F_blue, F_alpha, F_luminance,
-    F_luminance_alpha, F_luminance_alphamask,
-    F_srgb, F_srgb_alpha,
-    F_sluminance, F_sluminance_alpha
-  };
-
-  enum WrapMode {
-    WM_unspecified, WM_clamp, WM_repeat,
-    WM_mirror, WM_mirror_once, WM_border_color
-  };
-
-  enum FilterType {
-    // Note that these type values match up, name-for-name, with a similar
-    // enumerated type in Panda's Texture object.  However, they do *not*
-    // match up numerically.  You must convert between them using a switch
-    // statement.
-    FT_unspecified,
-
-    // Mag Filter and Min Filter
-    FT_nearest,
-    FT_linear,
-
-    // Min Filter Only
-    FT_nearest_mipmap_nearest,   // "mipmap point"
-    FT_linear_mipmap_nearest,    // "mipmap linear"
-    FT_nearest_mipmap_linear,    // "mipmap bilinear"
-    FT_linear_mipmap_linear,     // "mipmap trilinear"
-  };
-
-  enum QualityLevel {
-    QL_unspecified,
-    QL_default,
-    QL_fastest,
-    QL_normal,
-    QL_best,
-  };
-
   TextureProperties();
   TextureProperties(const TextureProperties &copy);
   void operator = (const TextureProperties &copy);
@@ -93,32 +53,32 @@ public:
   bool operator == (const TextureProperties &other) const;
   bool operator != (const TextureProperties &other) const;
 
-  Format _format;
+  EggTexture::Format _format;
   bool _force_format;  // true when format has been explicitly specified
   bool _generic_format; // true if 'generic' keyword, meaning rgba8 -> rgba.
   bool _keep_format;   // true if 'keep-format' keyword.
-  FilterType _minfilter, _magfilter;
-  QualityLevel _quality_level;
+  EggTexture::FilterType _minfilter, _magfilter;
+  EggTexture::QualityLevel _quality_level;
   int _anisotropic_degree;
   PNMFileType *_color_type;
   PNMFileType *_alpha_type;
   bool _srgb;
 
 private:
-  static std::string get_format_string(Format format);
-  static std::string get_filter_string(FilterType filter_type);
+  static std::string get_format_string(EggTexture::Format format);
+  static std::string get_filter_string(EggTexture::FilterType filter_type);
   static std::string get_anisotropic_degree_string(int aniso_degree);
-  static std::string get_quality_level_string(QualityLevel quality_level);
+  static std::string get_quality_level_string(EggTexture::QualityLevel quality_level);
   static std::string get_type_string(PNMFileType *color_type,
                                 PNMFileType *alpha_type);
 
-  static Format union_format(Format a,
-                             Format b);
+  static EggTexture::Format union_format(EggTexture::Format a,
+                                         EggTexture::Format b);
 
-  static FilterType union_filter(FilterType a,
-                                 FilterType b);
-  static QualityLevel union_quality_level(QualityLevel a,
-                                          QualityLevel b);
+  static EggTexture::FilterType union_filter(EggTexture::FilterType a,
+                                             EggTexture::FilterType b);
+  static EggTexture::QualityLevel union_quality_level(EggTexture::QualityLevel a,
+                                                      EggTexture::QualityLevel b);
 
   bool _got_num_channels;
   int _num_channels;

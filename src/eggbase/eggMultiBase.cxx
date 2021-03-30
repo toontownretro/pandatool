@@ -112,6 +112,14 @@ post_process_egg_files() {
       }
     }
   } else {
+    if (_got_tbnauto) {
+      for (ei = _eggs.begin(); ei != _eggs.end(); ++ei) {
+        if ((*ei)->recompute_tangent_binormal_auto()) {
+          (*ei)->remove_unused_vertices(true);
+        }
+      }
+    }
+
     for (vector_string::const_iterator si = _tbn_names.begin();
          si != _tbn_names.end();
          ++si) {
@@ -155,7 +163,8 @@ read_egg(const Filename &filename) {
   // We always resolve filenames first based on the source egg filename, since
   // egg files almost always store relative paths.  This is a temporary kludge
   // around integrating the path_replace system with the EggData better.
-  data->resolve_filenames(file_path);
+  // Update: I believe this kludge is obsolete.  Commenting out.  - Josh.
+  // data->resolve_filenames(file_path);
 
   if (_force_complete) {
     if (!data->load_externals()) {
@@ -165,7 +174,7 @@ read_egg(const Filename &filename) {
 
   // Now resolve the filenames again according to the user's specified
   // _path_replace.
-  //EggBase::convert_paths(data, _path_replace, file_path);
+  EggBase::convert_paths(data, _path_replace, file_path);
 
   if (_got_coordinate_system) {
     data->set_coordinate_system(_coordinate_system);

@@ -8,9 +8,9 @@
   #define OTHER_LIBS \
     egg2pg:c egg:c pandaegg:m \
     pstatclient:c mathutil:c linmath:c putil:c \
-    gobj:c chan:c parametrics:c pgraph:c pgraphnodes:c \
+    gobj:c parametrics:c pgraph:c pgraphnodes:c \
     pnmimage:c grutil:c collide:c tform:c text:c \
-    char:c dgraph:c display:c device:c cull:c \
+    anim:c dgraph:c display:c device:c cull:c \
     downloader:c pipeline:c \
     event:c gsgbase:c movies:c \
     $[if $[HAVE_FREETYPE],pnmtext:c] \

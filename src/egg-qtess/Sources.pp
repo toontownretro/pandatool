@@ -4,10 +4,10 @@
     eggbase progbase
   #define OTHER_LIBS \
     egg2pg:c egg:c pandaegg:m \
-    chan:c char:c downloader:c event:c \
+    anim:c downloader:c event:c \
     tform:c grutil:c text:c dgraph:c display:c gsgbase:c \
     collide:c gobj:c cull:c device:c \
-    parametrics:c pgraph:c pgraphnodes:c pipeline:c pstatclient:c chan:c \
+    parametrics:c pgraph:c pgraphnodes:c pipeline:c pstatclient:c \
     pnmimagetypes:c pnmimage:c mathutil:c linmath:c putil:c \
     movies:c \
     $[if $[HAVE_FREETYPE],pnmtext:c] \

@@ -156,6 +156,9 @@ post_process_egg_file() {
   if (_got_tbnall) {
     needs_remove |= _data->recompute_tangent_binormal(GlobPattern("*"));
   } else {
+    if (_got_tbnauto) {
+      needs_remove |= _data->recompute_tangent_binormal_auto();
+    }
     needs_remove |= _data->recompute_tangent_binormal(_tbn_names);
   }
 

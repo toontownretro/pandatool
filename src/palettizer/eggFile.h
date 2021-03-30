@@ -87,6 +87,9 @@ private:
   Filename _dest_filename;
   std::string _egg_comment;
 
+  typedef pvector<TextureReference *> Textures;
+  Textures _textures;
+
   bool _first_txa_match;
   PaletteGroups _explicitly_assigned_groups;
   PaletteGroup *_default_group;

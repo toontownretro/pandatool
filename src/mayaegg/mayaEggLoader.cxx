@@ -32,8 +32,6 @@
 #include "eggNurbsSurface.h"
 #include "texture.h"
 #include "texturePool.h"
-#include "material.h"
-#include "pTexture.h"
 
 #include "pre_maya_include.h"
 #include <maya/MStatus.h>
@@ -104,7 +102,7 @@ public:
   MayaEggJoint *MakeJoint(EggGroup *joint, EggGroup *context);
   MayaEggGroup *FindGroup(EggGroup *group);
   MayaEggGroup *MakeGroup(EggGroup *group, EggGroup *context);
-  MayaEggTex   *GetTex(EggMaterial *etex);
+  MayaEggTex   *GetTex(EggTexture *etex);
   void          CreateSkinCluster(MayaEggGeom *M);
 
   MayaAnim *GetAnim(EggXfmSAnim *pool);
@@ -239,35 +237,13 @@ void MayaEggTex::AssignNames(void)
   }
 }
 
-MayaEggTex *MayaEggLoader::GetTex(EggMaterial* etex)
+MayaEggTex *MayaEggLoader::GetTex(EggTexture* etex)
 {
   string name = "";
   string fn = "";
-  PT(Material) mat;
   if (etex != nullptr) {
     name = etex->get_name();
-    mat = Material::load(etex->get_fullpath());
-
-    if (mat != nullptr) {
-      // Find the base texture.
-      for (size_t i = 0; i < mat->get_num_textures(); i++) {
-        MatTexture *tex = mat->get_texture(i);
-        if (tex->get_source() == MatTexture::S_filename) {
-          if (tex->get_stage_name() == "albedo" || tex->get_stage_name() == "base" ||
-              tex->get_stage_name() == "color" || tex->get_stage_name() == "basecolor") {
-
-            // Here's the one we want.
-            // Pull out the image from the .ptex.
-            PT(PTexture) ptex = PTexture::load(tex->get_fullpath());
-            if (ptex == nullptr) {
-              continue;
-            }
-            fn = ptex->get_image_fullpath().to_os_specific();
-            break;
-          }
-        }
-      }
-    }
+    fn = etex->get_fullpath().to_os_specific();
   }
 
   if (_tex_tab.count(fn)) {
@@ -322,8 +298,10 @@ MayaEggTex *MayaEggLoader::GetTex(EggMaterial* etex)
 
       // [gjeon] to create alpha channel connection
       LoaderOptions options;
-      PT(Texture) tex = TexturePool::load_texture(Filename::from_os_specific(fn), 0, false, options);
-      if (((tex != nullptr) && (tex->get_num_components() == 4)))
+      PT(Texture) tex = TexturePool::load_texture(etex->get_fullpath(), 0, false, options);
+      if (((tex != nullptr) && (tex->get_num_components() == 4))
+          || (etex->get_format() == EggTexture::F_alpha)
+          || (etex->get_format() == EggTexture::F_luminance_alpha))
         dgmod.connect(filetex.findPlug("outTransparency"),shader.findPlug("transparency"));
     }
     status = dgmod.doIt();
@@ -1369,9 +1347,14 @@ void MayaEggLoader::TraverseEggNode(EggNode *node, EggGroup *context, string del
     MayaEggTex *tex = 0;
     LMatrix3d uvtrans = LMatrix3d::ident_mat();
 
-    if (poly->has_material()) {
-      EggMaterial *etex = poly->get_material();
+    if (poly->has_texture()) {
+      EggTexture *etex = poly->get_texture(0);
+      if (mayaloader_cat.is_spam()) {
+        mayaloader_cat.spam() << "Texture format : " << etex->get_format() << endl;
+      }
       tex = GetTex(etex);
+      if (etex->has_transform())
+        uvtrans = etex->get_transform2d();
     } else {
       tex = GetTex(nullptr);
     }
@@ -1419,9 +1402,9 @@ void MayaEggLoader::TraverseEggNode(EggNode *node, EggGroup *context, string del
     mesh->AddFace(numVertices, mvertIndices, mtvertIndices, tex);
 
     // [gjeon] to handle double-sided flag
-    //if (poly->get_bface_flag()) {
-    //  mesh->AddEggFlag("double-sided");
-    //}
+    if (poly->get_bface_flag()) {
+      mesh->AddEggFlag("double-sided");
+    }
 
     // [gjeon] to handle model flag
     if (context->get_model_flag()) {
@@ -1464,9 +1447,14 @@ void MayaEggLoader::TraverseEggNode(EggNode *node, EggGroup *context, string del
     MayaEggTex *tex = 0;
     LMatrix3d uvtrans = LMatrix3d::ident_mat();
 
-    if (eggNurbsSurface->has_material()) {
-      EggMaterial *etex = eggNurbsSurface->get_material();
+    if (eggNurbsSurface->has_texture()) {
+      EggTexture *etex = eggNurbsSurface->get_texture(0);
       tex = GetTex(etex);
+      if (etex->has_transform())
+      {
+        mayaloader_cat.debug() << "uvtrans?" << endl;
+        uvtrans = etex->get_transform2d();
+      }
     } else {
       tex = GetTex(nullptr);
     }
@@ -1509,9 +1497,9 @@ void MayaEggLoader::TraverseEggNode(EggNode *node, EggGroup *context, string del
     }
 
     // [gjeon] to handle double-sided flag
-    //if (eggNurbsSurface->get_bface_flag()) {
-    //  surface->AddEggFlag("double-sided");
-    //}
+    if (eggNurbsSurface->get_bface_flag()) {
+      surface->AddEggFlag("double-sided");
+    }
 
     // [gjeon] to handle model flag
     if (context->get_model_flag()) {

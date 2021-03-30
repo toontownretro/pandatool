@@ -15,14 +15,12 @@
 
 #include "pnmImage.h"
 #include "config_putil.h"
-#include "eggMaterialCollection.h"
+#include "eggTextureCollection.h"
 #include "eggGroup.h"
 #include "eggGroupNode.h"
 #include "eggSwitchCondition.h"
 #include "string_utils.h"
 #include "dcast.h"
-#include "material.h"
-#include "pTexture.h"
 
 /**
  *
@@ -194,8 +192,6 @@ handle_args(ProgramBase::Args &args) {
     DSearchPath file_path;
     file_path.append_directory(filename.get_dirname());
 
-    file_data.resolve_filenames(file_path);
-
     if (_force_complete) {
       if (!file_data.load_externals(file_path)) {
         exit(1);
@@ -204,7 +200,7 @@ handle_args(ProgramBase::Args &args) {
 
     // Now resolve the filenames again according to the user's specified
     // _path_replace.
-    //convert_paths(&file_data, _path_replace, file_path);
+    convert_paths(&file_data, _path_replace, file_path);
 
     _data->merge(file_data);
   }
@@ -248,21 +244,20 @@ do_reader_options() {
 }
 
 /**
- * Renames and copies the materials referenced in the egg file, if so specified
- * by the -td and -te options.  Returns true if all materials are copied
- * successfully, false if any one of them failed.  This also copies the
- * textures referenced by the material.
+ * Renames and copies the textures referenced in the egg file, if so specified
+ * by the -td and -te options.  Returns true if all textures are copied
+ * successfully, false if any one of them failed.
  */
 bool EggReader::
 copy_textures() {
   bool success = true;
-  EggMaterialCollection materials;
-  materials.find_used_materials(_data);
+  EggTextureCollection textures;
+  textures.find_used_textures(_data);
 
-  EggMaterialCollection::const_iterator ti;
-  for (ti = materials.begin(); ti != materials.end(); ++ti) {
-    EggMaterial *mat = (*ti);
-    Filename orig_filename = mat->get_filename();
+  EggTextureCollection::const_iterator ti;
+  for (ti = textures.begin(); ti != textures.end(); ++ti) {
+    EggTexture *tex = (*ti);
+    Filename orig_filename = tex->get_filename();
     if (!orig_filename.exists()) {
       bool found = orig_filename.resolve_filename(get_model_path());
       if (!found) {
@@ -276,170 +271,28 @@ copy_textures() {
     if (_got_tex_dirname) {
       new_filename.set_dirname(_tex_dirname);
     }
+    if (_got_tex_extension) {
+      new_filename.set_extension(_tex_extension);
+    }
 
     if (orig_filename != new_filename) {
-      mat->set_filename(new_filename);
-
-      PT(Material) material = Material::load(orig_filename);
-      if (material == nullptr) {
-        nout << "Unable to read material " << orig_filename << "\n";
-        success = false;
-        continue;
-      }
-
-      bool any_tex_copied;
-      if (!copy_material_textures(material, any_tex_copied)) {
-        success = false;
-        continue;
-      }
+      tex->set_filename(new_filename);
 
       // The new filename is different; does it need copying?
       int compare =
         orig_filename.compare_timestamps(new_filename, true, true);
-      if (compare > 0 || any_tex_copied) {
+      if (compare > 0) {
         // Yes, it does.  Copy it!
-        if (any_tex_copied) {
-          material->write(new_filename);
-
-        } else {
-          // We didn't copy or change any of the textures in the Material, just
-          // copy the file.
-          orig_filename.copy_to(new_filename);
-        }
-      }
-    }
-  }
-
-  return success;
-}
-
-/**
- * Copies the textures referenced by the indicated material to the directory
- * specified using the -td switch.
- */
-bool EggReader::
-copy_material_textures(Material *material, bool &any_copied) {
-  bool success = true;
-  any_copied = false;
-
-  for (size_t i = 0; i < material->get_num_textures(); i++) {
-    MatTexture *tex = material->get_texture(i);
-    if (tex->get_source() == MatTexture::S_filename) {
-      Filename orig_filename = tex->get_filename();
-      Filename new_filename = orig_filename.get_basename();
-
-      if (new_filename != orig_filename) {
-        tex->set_filename(new_filename);
-        any_copied = true;
-
-        bool textures_copied = false;
-
-        PT(PTexture) ptex = PTexture::load(tex->get_fullpath());
-        if (ptex == nullptr) {
+        nout << "Reading " << orig_filename << "\n";
+        PNMImage image;
+        if (!image.read(orig_filename)) {
+          nout << "  unable to read!\n";
           success = false;
-          continue;
-        }
-
-        if (!ptex->get_image_filename().empty()) {
-          Filename orig_image_filename = ptex->get_image_filename();
-          Filename new_image_filename = orig_image_filename.get_basename();
-          if (_got_tex_extension) {
-            new_image_filename.set_extension(_tex_extension);
-          }
-
-          if (orig_image_filename != new_image_filename) {
-            ptex->set_image_filename(new_image_filename);
-
-            // The new filename is different; does it need copying?
-            int compare =
-              orig_image_filename.compare_timestamps(new_image_filename, true, true);
-            if (compare > 0) {
-              textures_copied = true;
-              // Yes, it does.  Copy it!
-              if ((orig_image_filename.get_extension() != new_image_filename.get_extension())) {
-                // The extension is different, need to use PNMImage to
-                // save the texture in the new format.
-                nout << "Reading " << orig_image_filename << "\n";
-                PNMImage image;
-                if (!image.read(orig_image_filename)) {
-                  nout << "  unable to read!\n";
-                  success = false;
-                } else {
-                  nout << "Writing " << new_image_filename << "\n";
-                  if (!image.write(new_image_filename, _tex_type)) {
-                    nout << "  unable to write!\n";
-                    success = false;
-                  }
-                }
-
-              } else {
-                // The extension is the same.  Just copy the file.
-                if (!orig_image_filename.copy_to(new_image_filename)) {
-                  nout << "Unable to copy texture " << orig_image_filename << " to " << new_image_filename
-                      << "\n";
-                  success = false;
-                }
-              }
-            }
-          }
-        }
-
-        if (ptex->has_alpha_image_filename()) {
-          Filename orig_image_filename = ptex->get_alpha_image_filename();
-          Filename new_image_filename = orig_image_filename.get_basename();
-          if (_got_tex_extension) {
-            new_image_filename.set_extension(_tex_extension);
-          }
-
-          if (orig_image_filename != new_image_filename) {
-            ptex->set_alpha_image_filename(new_image_filename);
-
-            // The new filename is different; does it need copying?
-            int compare =
-              orig_image_filename.compare_timestamps(new_image_filename, true, true);
-            if (compare > 0) {
-              textures_copied = true;
-              // Yes, it does.  Copy it!
-              if ((orig_image_filename.get_extension() != new_image_filename.get_extension())) {
-                // The extension is different, need to use PNMImage to
-                // save the texture in the new format.
-                nout << "Reading " << orig_image_filename << "\n";
-                PNMImage image;
-                if (!image.read(orig_image_filename)) {
-                  nout << "  unable to read!\n";
-                  success = false;
-                } else {
-                  nout << "Writing " << new_image_filename << "\n";
-                  if (!image.write(new_image_filename, _tex_type)) {
-                    nout << "  unable to write!\n";
-                    success = false;
-                  }
-                }
-
-              } else {
-                // The extension is the same.  Just copy the file.
-                if (!orig_image_filename.copy_to(new_image_filename)) {
-                  nout << "Unable to copy texture " << orig_image_filename << " to " << new_image_filename
-                      << "\n";
-                  success = false;
-                }
-              }
-            }
-          }
-        }
-
-        // The new filename is different; does it need copying?
-        int compare =
-          orig_filename.compare_timestamps(new_filename, true, true);
-        if (compare > 0 || textures_copied) {
-          // Yes, it does.  Copy it!
-          if (textures_copied) {
-            ptex->write(new_filename);
-          } else {
-            if (!orig_filename.copy_to(new_filename)) {
-              nout << "Unable to copy " << orig_filename << " to " << new_filename << "\n";
-              success = false;
-            }
+        } else {
+          nout << "Writing " << new_filename << "\n";
+          if (!image.write(new_filename, _tex_type)) {
+            nout << "  unable to write!\n";
+            success = false;
           }
         }
       }

@@ -197,7 +197,7 @@ MayaToEgg() :
   _verbose = 0;
   _polygon_tolerance = 0.01;
   _transform_type = MayaToEggConverter::TT_model;
-  _got_tbnall = true;
+  _got_tbnauto = true;
 }
 
 /**

@@ -29,8 +29,8 @@
 #include "eggNurbsCurve.h"
 #include "eggPolygon.h"
 #include "eggPrimitive.h"
-#include "eggMaterial.h"
-#include "eggMaterialCollection.h"
+#include "eggTexture.h"
+#include "eggTextureCollection.h"
 #include "eggXfmSAnim.h"
 #include "eggSAnimData.h"
 #include "string_utils.h"
@@ -566,7 +566,7 @@ close_api() {
 void MayaToEggConverter::
 clear() {
   _tree.clear();
-  _materials.clear();
+  _textures.clear();
   _shaders.clear();
 }
 
@@ -1840,7 +1840,7 @@ make_polyset(MayaNodeDesc *node_desc, const MDagPath &dag_path,
     EggPolygon *egg_poly = new EggPolygon;
     egg_group->add_child(egg_poly);
 
-    //egg_poly->set_bface_flag(double_sided);
+    egg_poly->set_bface_flag(double_sided);
 
     // Determine the MayaShader for this particular polygon.  There appears to
     // be two diverging paths for any Maya node with a Material (MayaShader)
@@ -1933,7 +1933,7 @@ make_polyset(MayaNodeDesc *node_desc, const MDagPath &dag_path,
         if (shader != nullptr) {
           mayaegg_cat.spam() << "shader->_color.size is " << shader->_color.size() << endl;
         }
-        //mayaegg_cat.spam() << "primitive->tref.size is " << egg_poly->get_num_textures() << endl;
+        mayaegg_cat.spam() << "primitive->tref.size is " << egg_poly->get_num_textures() << endl;
       }
       for (size_t ti=0; ti< _shaders._uvset_names.size(); ++ti) {
         // get the eggTexture pointer
@@ -2580,19 +2580,28 @@ void MayaToEggConverter::
 set_shader_modern(EggPrimitive &primitive, const MayaShader &shader,
                       bool mesh) {
 
-  if (shader._all_maps.size() == 0) {
-    return;
+  for (size_t idx=0; idx < shader._all_maps.size(); idx++) {
+    MayaShaderColorDef *def = shader._all_maps[idx];
+    if ((def->_is_alpha)&&(def->_opposite != 0)) {
+      // This texture represents an alpha-filename.  It doesn't get its own
+      // <Texture>
+      continue;
+    }
+
+    EggTexture tex(shader.get_name(), "");
+    tex.set_format(def->_is_alpha ? EggTexture::F_alpha : EggTexture::F_rgb);
+    apply_texture_filename(tex, *def);
+    if (def->_opposite) {
+      apply_texture_alpha_filename(tex, *def);
+    }
+    apply_texture_uvprops(tex, *def);
+    apply_texture_blendtype(tex, *def);
+    tex.set_uv_name(def->get_panda_uvset_name());
+
+    EggTexture *new_tex =
+      _textures.create_unique_texture(tex, ~0);
+    primitive.add_texture(new_tex);
   }
-
-  // Pull out the first texture.  The filename of the texture will be turned
-  // into a material filename.
-  MayaShaderColorDef *def = shader._all_maps[0];
-  EggMaterial mat(shader.get_name(), "");
-  apply_material_filename(mat, *def);
-
-  EggMaterial *new_mat =
-    _materials.create_unique_material(mat, ~0);
-  primitive.set_material(new_mat);
 }
 
 /**
@@ -2614,21 +2623,51 @@ set_shader_legacy(EggPrimitive &primitive, const MayaShader &shader,
   // determine if the base texture or any of the top texture need to be rgb
   // only
   MayaShaderColorDef *color_def = nullptr;
+  bool is_rgb = false;
+  bool is_decal = false;
+  bool is_interpolate = false;
+  int i;
+  // last shader is the base so lets skip it
+  for (i=0; i<(int)shader._color.size()-1; ++i) {
+    color_def = shader.get_color_def(i);
+    if (color_def->_has_texture) {
+      if ((EggTexture::EnvType)color_def->_interpolate) {
+        is_interpolate = true;
+      }
+      else if ((EggTexture::EnvType)color_def->_blend_type == EggTexture::ET_modulate) {
+        // Maya's multiply is slightly different than panda's.  Unless,
+        // _keep_alpha is set, we are dropping the alpha.
+        if (!color_def->_keep_alpha)
+          is_rgb = true; // modulate forces the alpha to be ignored
+      }
+      else if ((EggTexture::EnvType)color_def->_blend_type == EggTexture::ET_decal) {
+        is_decal = true;
+      }
+    }
+  }
+
+  // we don't want an extra light stage for interpolate mode, it takes care of
+  // automatically
+  if (is_interpolate)
+    is_decal = false;
+
+  // new decal mode needs an extra dummy layers of textureStage
+  EggTexture *dummy_tex = nullptr;
+  string dummy_uvset_name;
 
   // In Maya, a polygon is either textured or colored.  The texture, if
   // present, replaces the color.  Also now there could be multiple textures
-
-  if (shader._color.size() != 0) {
-    color_def = shader._color[0];
+  const MayaShaderColorDef &trans_def = shader._transparency;
+  for (i=shader._color.size()-1; i>=0; --i) {
+    color_def = shader.get_color_def(i);
     if (mayaegg_cat.is_spam()) {
-      mayaegg_cat.spam() << "got color_def: " << color_def << endl;
+      mayaegg_cat.spam() << "slot " << i << ":got color_def: " << color_def << endl;
     }
-
-    if (color_def->_has_texture) {
-      EggMaterial mat(shader.get_name(), "");
+    if (color_def->_has_texture || trans_def._has_texture) {
+      EggTexture tex(shader.get_name(), "");
       if (mayaegg_cat.is_spam()) {
-        mayaegg_cat.spam() << "got shader name: " << shader.get_name() << endl;
-        mayaegg_cat.spam() << "ssa:texture name: " << color_def->_texture_name << endl;
+        mayaegg_cat.spam() << "got shader name:" << shader.get_name() << endl;
+        mayaegg_cat.spam() << "ssa:texture name[" << i << "]: " << color_def->_texture_name << endl;
       }
 
       string uvset_name = _shaders.find_uv_link(color_def->_texture_name);
@@ -2636,35 +2675,199 @@ set_shader_legacy(EggPrimitive &primitive, const MayaShader &shader,
         mayaegg_cat.spam() << "ssa:corresponding uvset name is " << uvset_name << endl;
       }
 
-      // Replace the texture extension with ".pmat", the material file
-      // extension.  It is assumed that the material file is next to the
-      // texture file with the same basename.
-      Filename filename = Filename::from_os_specific(color_def->_texture_filename);
-      filename.set_extension("pmat");
-      Filename fullpath, outpath;
-      _path_replace->full_convert_path(filename, get_model_path(),
-                                       fullpath, outpath);
-      mat.set_filename(outpath);
-      mat.set_fullpath(fullpath);
+      if (color_def->_has_texture) {
+        // If we have a texture on color, apply it as the filename.  if
+        // (mayaegg_cat.is_debug()) { mayaegg_cat.debug() << "ssa:got texture
+        // name" << color_def->_texture_filename << endl; }
+        Filename filename = Filename::from_os_specific(color_def->_texture_filename);
+        Filename fullpath, outpath;
+        _path_replace->full_convert_path(filename, get_model_path(), fullpath, outpath);
+        tex.set_filename(outpath);
+        tex.set_fullpath(fullpath);
+        apply_texture_uvprops(tex, *color_def);
 
-      if (mayaegg_cat.is_debug()) {
-        mayaegg_cat.debug() << "ssa:mref_name:" << mat.get_name() << endl;
+        // If we also have a texture on transparency, apply it as the alpha
+        // filename.
+        if (trans_def._has_texture) {
+          if (color_def->_wrap_u != trans_def._wrap_u ||
+              color_def->_wrap_u != trans_def._wrap_u) {
+            mayaegg_cat.warning()
+              << "Shader " << shader.get_name()
+              << " has contradictory wrap modes on color and texture.\n";
+          }
+
+          if (!compare_texture_uvprops(tex, trans_def)) {
+            // Only report each broken shader once.
+            static pset<string> bad_shaders;
+            if (bad_shaders.insert(shader.get_name()).second) {
+              mayaegg_cat.error()
+                << "Color and transparency texture properties differ on shader "
+                << shader.get_name() << "\n";
+            }
+          }
+          // tex.set_format(EggTexture::F_rgba);
+
+          // We should try to be smarter about whether the transparency value
+          // is connected to the texture's alpha channel or to its grayscale
+          // channel.  However, I'm not sure how to detect this at the moment;
+          // rather than spending days trying to figure out, for now I'll just
+          // assume that if the same texture image is used for both color and
+          // transparency, then the artist meant to use the alpha channel for
+          // transparency.
+          if (trans_def._texture_filename == color_def->_texture_filename) {
+            // That means that we don't need to do anything special: use all
+            // the channels of the texture.
+
+          } else {
+            // Otherwise, pull the alpha channel from the other image file.
+            // Ideally, we should figure out which channel from the other
+            // image supplies alpha (and specify this via
+            // set_alpha_file_channel()), but for now we assume it comes from
+            // the grayscale data.
+            filename = Filename::from_os_specific(trans_def._texture_filename);
+            _path_replace->full_convert_path(filename, get_model_path(),
+                                             fullpath, outpath);
+            tex.set_alpha_filename(outpath);
+            tex.set_alpha_fullpath(fullpath);
+          }
+        } else {
+          // If there is no transparency texture specified, we don't have any
+          // transparency, so tell the egg format to ignore any alpha channel
+          // that might be on the color texture.
+          // tex.set_format(EggTexture::F_rgb);
+        }
+
+        if (shader._color.size() > 1) {
+          // if multi-textured, first texture in maya is on top, so last
+          // shader on the list is the base one, which should always pick up
+          // the alpha from the texture file.  But the top textures may have
+          // to strip the alpha
+          if ((size_t)i != shader._color.size() - 1) {
+            if (!i && is_interpolate) {
+              // this is the grass path mode where alpha on this texture
+              // determines whether to show layer1 or layer2. Since by now
+              // other layers are set lets change those to get this effect
+              tex.set_combine_mode(EggTexture::CC_rgb, EggTexture::CM_interpolate);
+              tex.set_combine_source(EggTexture::CC_rgb, 0, EggTexture::CS_previous);
+              tex.set_combine_operand(EggTexture::CC_rgb, 0, EggTexture::CO_src_color);
+              tex.set_combine_source(EggTexture::CC_rgb, 1, EggTexture::CS_last_saved_result);
+              tex.set_combine_operand(EggTexture::CC_rgb, 1, EggTexture::CO_src_color);
+              tex.set_combine_source(EggTexture::CC_rgb, 2, EggTexture::CS_texture);
+              tex.set_combine_operand(EggTexture::CC_rgb, 2, EggTexture::CO_src_alpha);
+
+              tex.set_combine_mode(EggTexture::CC_alpha, EggTexture::CM_interpolate);
+              tex.set_combine_source(EggTexture::CC_alpha, 0, EggTexture::CS_previous);
+              tex.set_combine_operand(EggTexture::CC_alpha, 0, EggTexture::CO_src_alpha);
+              tex.set_combine_source(EggTexture::CC_alpha, 1, EggTexture::CS_last_saved_result);
+              tex.set_combine_operand(EggTexture::CC_alpha, 1, EggTexture::CO_src_alpha);
+              tex.set_combine_source(EggTexture::CC_alpha, 2, EggTexture::CS_texture);
+              tex.set_combine_operand(EggTexture::CC_alpha, 2, EggTexture::CO_src_alpha);
+            }
+            else {
+              if (is_interpolate) {
+                tex.set_combine_mode(EggTexture::CC_rgb, EggTexture::CM_modulate);
+                tex.set_combine_source(EggTexture::CC_rgb, 0, EggTexture::CS_primary_color);
+                tex.set_combine_operand(EggTexture::CC_rgb, 0, EggTexture::CO_src_color);
+                tex.set_combine_source(EggTexture::CC_rgb, 1, EggTexture::CS_texture);
+                tex.set_combine_operand(EggTexture::CC_rgb, 1, EggTexture::CO_src_color);
+              }
+              else {
+                tex.set_env_type((EggTexture::EnvType)color_def->_blend_type);
+                if (tex.get_env_type() == EggTexture::ET_modulate) {
+                  if (color_def->_has_alpha_channel) {
+                    // lets caution the artist that they should not be using a
+                    // alpha channel on this texture.
+                    if (mayaegg_cat.is_spam()) {
+                      maya_cat.spam()
+                        << color_def->_texture_name
+                        << " should not have alpha channel in multiply mode: ignoring\n";
+                    }
+                  }
+                  if (is_rgb) {
+                    // tex.set_alpha_mode(EggRenderMode::AM_off);   force
+                    // alpha off
+                    tex.set_format(EggTexture::F_rgb);  // Change the format to be rgb only
+                  }
+                }
+              }
+            }
+          }
+          else {
+            if (is_interpolate) {
+              // base shader need to save result
+              tex.set_saved_result(true);
+            }
+            else if (is_decal) {
+              // decal in classic time, always overwrote the base color.  That
+              // causes problem when the polygon wants to be lit or wants to
+              // retain vertexpolygon color In the new decal mode, we achieve
+              // this with a third dummy layer copy this layer to a new dummy
+              // layer
+              EggTexture texDummy(shader.get_name()+".dummy", "");
+              if (mayaegg_cat.is_debug()) {
+                mayaegg_cat.debug() << "creating dummy shader: " << texDummy.get_name() << endl;
+              }
+              texDummy.set_filename(outpath);
+              texDummy.set_fullpath(fullpath);
+              apply_texture_uvprops(texDummy, *color_def);
+              texDummy.set_combine_mode(EggTexture::CC_rgb, EggTexture::CM_modulate);
+              texDummy.set_combine_source(EggTexture::CC_rgb, 0, EggTexture::CS_primary_color);
+              texDummy.set_combine_operand(EggTexture::CC_rgb, 0, EggTexture::CO_src_color);
+              texDummy.set_combine_source(EggTexture::CC_rgb, 1, EggTexture::CS_previous);
+              texDummy.set_combine_operand(EggTexture::CC_rgb, 1, EggTexture::CO_src_color);
+              dummy_tex = _textures.create_unique_texture(texDummy, ~0);
+
+              // make this layer ET_replace
+              tex.set_env_type(EggTexture::ET_replace);
+            }
+          }
+        }
+      } else {  // trans_def._has_texture
+        // We have a texture on transparency only.  Apply it as the primary
+        // filename, and set the format accordingly.
+        Filename filename = Filename::from_os_specific(trans_def._texture_filename);
+        Filename fullpath,outpath;
+        _path_replace->full_convert_path(filename, get_model_path(),
+                                         fullpath, outpath);
+        tex.set_filename(outpath);
+        tex.set_fullpath(fullpath);
+        tex.set_format(EggTexture::F_alpha);
+        apply_texture_uvprops(tex, trans_def);
       }
 
-      EggMaterial *new_mat =
-        _materials.create_unique_material(mat, ~0);
+      if (mayaegg_cat.is_debug()) {
+        mayaegg_cat.debug() << "ssa:tref_name:" << tex.get_name() << endl;
+      }
+      if (is_rgb && i == (int)shader._color.size()-1) {
+        // make base layer rgb only
+        tex.set_format(EggTexture::F_rgb);  // Change the format to be rgb only
+      }
+      EggTexture *new_tex =
+        _textures.create_unique_texture(tex, ~0);
 
       if (mesh) {
         if (uvset_name.find("not found") == string::npos) {
-          primitive.set_material(new_mat);
+          primitive.add_texture(new_tex);
           color_def->_uvset_name.assign(uvset_name.c_str());
+          if (uvset_name != "map1") {
+            new_tex->set_uv_name(uvset_name);
+          }
+          if (i == (int)shader._color.size()-1 && is_decal) {
+            dummy_uvset_name.assign(color_def->_uvset_name);
+          }
         }
       } else {
-        primitive.set_material(new_mat);
+        primitive.add_texture(new_tex);
+        if (color_def->_uvset_name != "map1") {
+          new_tex->set_uv_name(color_def->_uvset_name);
+        }
       }
     }
   }
-
+  if (dummy_tex != nullptr) {
+    primitive.add_texture(dummy_tex);
+    dummy_tex->set_uv_name(dummy_uvset_name);
+  }
   // Also apply an overall color to the primitive.
   LColor rgba = shader.get_rgba();
   if (mayaegg_cat.is_spam()) {
@@ -2677,6 +2880,9 @@ set_shader_legacy(EggPrimitive &primitive, const MayaShader &shader,
     rgba[0] = 1.0f;
     rgba[1] = 1.0f;
     rgba[2] = 1.0f;
+  }
+  if (trans_def._has_texture) {
+    rgba[3] = 1.0f;
   }
 
   // But the color gain always gets applied.
@@ -2698,19 +2904,148 @@ set_shader_legacy(EggPrimitive &primitive, const MayaShader &shader,
 }
 
 /**
- * Applies the filename to the EggMaterial.
+ * Applies all the appropriate texture properties to the EggTexture object,
+ * including wrap modes and texture matrix.
  */
 void MayaToEggConverter::
-apply_material_filename(EggMaterial &mat, const MayaShaderColorDef &def) {
+apply_texture_uvprops(EggTexture &tex, const MayaShaderColorDef &color_def) {
+  // Let's mipmap all textures by default.
+  tex.set_minfilter(EggTexture::FT_linear_mipmap_linear);
+  tex.set_magfilter(EggTexture::FT_linear);
+
+  EggTexture::WrapMode wrap_u = color_def._wrap_u ? EggTexture::WM_repeat : EggTexture::WM_clamp;
+  EggTexture::WrapMode wrap_v = color_def._wrap_v ? EggTexture::WM_repeat : EggTexture::WM_clamp;
+
+  tex.set_wrap_u(wrap_u);
+  tex.set_wrap_v(wrap_v);
+
+  LMatrix3d mat = color_def.compute_texture_matrix();
+  if (!mat.almost_equal(LMatrix3d::ident_mat())) {
+    tex.set_transform2d(mat);
+  }
+}
+
+/**
+ * Applies the blendtype to the EggTexture.
+ */
+void MayaToEggConverter::
+apply_texture_blendtype(EggTexture &tex, const MayaShaderColorDef &color_def) {
+  switch (color_def._blend_type) {
+  case MayaShaderColorDef::BT_unspecified:
+    tex.set_env_type(EggTexture::ET_unspecified);
+    return;
+  case MayaShaderColorDef::BT_modulate:
+    tex.set_env_type(EggTexture::ET_modulate);
+    return;
+  case MayaShaderColorDef::BT_decal:
+    tex.set_env_type(EggTexture::ET_decal);
+    return;
+  case MayaShaderColorDef::BT_blend:
+    tex.set_env_type(EggTexture::ET_blend);
+    return;
+  case MayaShaderColorDef::BT_replace:
+    tex.set_env_type(EggTexture::ET_replace);
+    return;
+  case MayaShaderColorDef::BT_add:
+    tex.set_env_type(EggTexture::ET_add);
+    return;
+  case MayaShaderColorDef::BT_blend_color_scale:
+    tex.set_env_type(EggTexture::ET_blend_color_scale);
+    return;
+  case MayaShaderColorDef::BT_modulate_glow:
+    tex.set_env_type(EggTexture::ET_modulate_glow);
+    return;
+  case MayaShaderColorDef::BT_modulate_gloss:
+    tex.set_env_type(EggTexture::ET_modulate_gloss);
+    return;
+  case MayaShaderColorDef::BT_normal:
+    tex.set_env_type(EggTexture::ET_normal);
+    return;
+  case MayaShaderColorDef::BT_normal_height:
+    tex.set_env_type(EggTexture::ET_normal_height);
+    return;
+  case MayaShaderColorDef::BT_glow:
+    tex.set_env_type(EggTexture::ET_glow);
+    return;
+  case MayaShaderColorDef::BT_gloss:
+    tex.set_env_type(EggTexture::ET_gloss);
+    return;
+  case MayaShaderColorDef::BT_height:
+    tex.set_env_type(EggTexture::ET_height);
+    return;
+  case MayaShaderColorDef::BT_selector:
+    tex.set_env_type(EggTexture::ET_selector);
+    return;
+  }
+}
+
+/**
+ * Applies the filename to the EggTexture.
+ */
+void MayaToEggConverter::
+apply_texture_filename(EggTexture &tex, const MayaShaderColorDef &def) {
   Filename filename = Filename::from_os_specific(def._texture_filename);
-  // Replace the extension of the texture file with the material extension.  It
-  // is assumed that the material file will reside next to the texture file,
-  // with the same basename.
-  filename.set_extension("pmat");
   Filename fullpath, outpath;
   _path_replace->full_convert_path(filename, get_model_path(), fullpath, outpath);
-  mat.set_filename(outpath);
-  mat.set_fullpath(fullpath);
+  tex.set_filename(outpath);
+  tex.set_fullpath(fullpath);
+}
+
+/**
+ * Applies the alpha filename to the EggTexture.
+ */
+void MayaToEggConverter::
+apply_texture_alpha_filename(EggTexture &tex, const MayaShaderColorDef &def) {
+  if (def._opposite) {
+    tex.set_format(EggTexture::F_rgba);
+    if (def._opposite->_texture_filename != def._texture_filename) {
+      Filename filename = Filename::from_os_specific(def._opposite->_texture_filename);
+      Filename fullpath, outpath;
+      _path_replace->full_convert_path(filename, get_model_path(), fullpath, outpath);
+      tex.set_alpha_filename(outpath);
+      tex.set_alpha_fullpath(fullpath);
+    }
+  }
+}
+
+/**
+ * Compares the texture properties already on the texture (presumably set by a
+ * previous call to apply_texture_uvprops()) and returns false if they differ
+ * from that specified by the indicated color_def object, or true if they
+ * match.
+ */
+bool MayaToEggConverter::
+compare_texture_uvprops(EggTexture &tex,
+                        const MayaShaderColorDef &color_def) {
+  bool okflag = true;
+
+  EggTexture::WrapMode wrap_u = color_def._wrap_u ? EggTexture::WM_repeat : EggTexture::WM_clamp;
+  EggTexture::WrapMode wrap_v = color_def._wrap_v ? EggTexture::WM_repeat : EggTexture::WM_clamp;
+
+  if (wrap_u != tex.determine_wrap_u()) {
+    // Choose the more general of the two.
+    if (wrap_u == EggTexture::WM_repeat) {
+      tex.set_wrap_u(wrap_u);
+    }
+    okflag = false;
+  }
+  if (wrap_v != tex.determine_wrap_v()) {
+    if (wrap_v == EggTexture::WM_repeat) {
+      tex.set_wrap_v(wrap_v);
+    }
+    okflag = false;
+  }
+
+  LMatrix3d m = color_def.compute_texture_matrix();
+  LMatrix4d mat4(m(0, 0), m(0, 1), 0.0, m(0, 2),
+                 m(1, 0), m(1, 1), 0.0, m(1, 2),
+                 0.0, 0.0, 1.0, 0.0,
+                 m(2, 0), m(2, 1), 0.0, m(2, 2));
+  if (!mat4.almost_equal(tex.get_transform3d())) {
+    okflag = false;
+  }
+
+  return okflag;
 }
 
 /**

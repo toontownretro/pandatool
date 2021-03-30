@@ -12,9 +12,7 @@
  */
 
 #include "eggListTextures.h"
-#include "eggMaterialCollection.h"
-#include "material.h"
-#include "pTexture.h"
+#include "eggTextureCollection.h"
 #include "pnmImageHeader.h"
 
 /**
@@ -39,39 +37,21 @@ run() {
     exit(1);
   }
 
-  EggMaterialCollection tc;
-  tc.find_used_materials(_data);
-  EggMaterialCollection::MaterialReplacement treplace;
-  tc.collapse_equivalent_materials(EggMaterial::E_filename, treplace);
-  //tc.sort_by_basename();
+  EggTextureCollection tc;
+  tc.find_used_textures(_data);
+  EggTextureCollection::TextureReplacement treplace;
+  tc.collapse_equivalent_textures(EggTexture::E_complete_filename, treplace);
+  tc.sort_by_basename();
 
-  EggMaterialCollection::iterator ti;
+  EggTextureCollection::iterator ti;
   for (ti = tc.begin(); ti != tc.end(); ++ti) {
     Filename fullpath = (*ti)->get_fullpath();
-
-    PT(Material) mat = Material::load(fullpath);
-    if (mat == nullptr) {
-      continue;
-    }
-
-    for (size_t i = 0; i < mat->get_num_textures(); i++) {
-      MatTexture *tex = mat->get_texture(i);
-      if (tex->get_source() != MatTexture::S_filename) {
-        continue;
-      }
-
-      PT(PTexture) ptex = PTexture::load(tex->get_fullpath());
-      if (ptex == nullptr) {
-        continue;
-      }
-
-      PNMImageHeader header;
-      if (header.read_header(ptex->get_image_fullpath())) {
-        std::cout << ptex->get_image_filename().get_basename() << " : "
-            << header.get_x_size() << " " << header.get_y_size() << "\n";
-      } else {
-        std::cout << ptex->get_image_filename().get_basename() << " : unknown\n";
-      }
+    PNMImageHeader header;
+    if (header.read_header(fullpath)) {
+      std::cout << fullpath.get_basename() << " : "
+           << header.get_x_size() << " " << header.get_y_size() << "\n";
+    } else {
+      std::cout << fullpath.get_basename() << " : unknown\n";
     }
   }
 }

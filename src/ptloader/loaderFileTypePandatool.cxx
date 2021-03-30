@@ -17,7 +17,7 @@
 #include "eggToSomethingConverter.h"
 #include "config_putil.h"
 #include "load_egg_file.h"
-#include "save_egg_file.h"
+//#include "save_egg_file.h"
 #include "eggData.h"
 #include "loaderOptions.h"
 #include "bamCacheRecord.h"
