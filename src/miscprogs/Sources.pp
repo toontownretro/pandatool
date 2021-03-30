@@ -19,3 +19,10 @@
     binToC.cxx binToC.h
 
 #end bin_target
+
+#begin bin_target
+  #define TARGET modindex2boo
+
+  #define SOURCES \
+    modelIndexToBoo.cxx modelIndexToBoo.h
+#end bin_target
