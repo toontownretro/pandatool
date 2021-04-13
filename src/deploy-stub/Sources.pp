@@ -2,6 +2,8 @@
 
 #define USE_PACKAGES python
 
+#define WIN_SYS_LIBS $[WIN_SYS_LIBS] Shell32.lib
+
 #begin bin_target
   #define TARGET deploy-stub
 
