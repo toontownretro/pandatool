@@ -121,7 +121,7 @@ run() {
 
     Texture *tex = DCAST(MaterialParamTexture, param)->get_value();
 
-    if (!tex->has_filename()) {
+    if (tex == nullptr || !tex->has_filename()) {
       continue;
     }
 
