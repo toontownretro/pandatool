@@ -82,3 +82,11 @@
     eggListTextures.cxx eggListTextures.h
 
 #end bin_target
+
+#begin bin_target
+  #define TARGET egg-strip-motion
+
+  #define SOURCES \
+    eggStripMotion.cxx eggStripMotion.h
+
+#end bin_target
