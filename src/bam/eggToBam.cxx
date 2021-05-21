@@ -37,6 +37,7 @@
 #include "modelIndex.h"
 #include "material.h"
 #include "materialAttrib.h"
+#include "modelRoot.h"
 
 /**
  *
@@ -331,6 +332,16 @@ collect_materials(PandaNode *node) {
       for (size_t i = 0; i < ta->get_num_on_stages(); i++) {
         Texture *tex = ta->get_on_texture(ta->get_on_stage(i));
         _textures.insert(tex);
+      }
+    }
+  } else if (node->is_of_type(ModelRoot::get_class_type())) {
+    // ModelRoots can contain material groups, so we need to remap those as
+    // well.
+    ModelRoot *model_root = DCAST(ModelRoot, node);
+    for (size_t i = 0; i < model_root->get_num_material_groups(); i++) {
+      const MaterialCollection &group = model_root->get_material_group(i);
+      for (int j = 0; j < group.get_num_materials(); j++) {
+        _materials.insert(group.get_material(j));
       }
     }
   }
