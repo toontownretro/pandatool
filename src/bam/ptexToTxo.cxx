@@ -15,6 +15,8 @@
 #include "pTexture.h"
 #include "texture.h"
 #include "texturePool.h"
+#include "pdxValue.h"
+#include "virtualFileSystem.h"
 
 /**
  *
@@ -51,30 +53,48 @@ run() {
   DSearchPath path = get_model_path().get_value();
   path.append_directory(".");
 
-  PT(PTexture) ptex = PTexture::load(_input_filename, path);
-  if (ptex == nullptr) {
+  VirtualFileSystem *vfs = VirtualFileSystem::get_global_ptr();
+  Filename fullpath = _input_filename;
+  if (!vfs->resolve_filename(fullpath, path)) {
+    std::cout << "Could not find input texture\n";
+    return false;
+  }
+
+  PDXValue val;
+  if (!val.read(fullpath, path)) {
     std::cerr << "Could not load the input texture!\n";
+    return false;
+  }
+
+  PDXElement *elem = val.get_element();
+  if (elem == nullptr) {
+    std::cerr << "Expected PDXElement at root of texture\n";
+    return false;
+  }
+
+  PTexture ptex;
+  if (!ptex.load(elem, path)) {
+    std::cerr << "Failed to read file into ptex structure\n";
     return false;
   }
 
   bool needs_rewrite = true;
 
   // Only rewrite if necessary.
-  Filename ptex_filename = ptex->get_fullpath();
+  Filename ptex_filename = fullpath;
   if (_output_filename.compare_timestamps(ptex_filename) > 0) {
     // Up-to-date with the .ptex, check the images.
-    PTexture::TextureType type = ptex->get_texture_type();
-    if (type == PTexture::TT_unspecified ||
-        type == PTexture::TT_1d_texture ||
-        type == PTexture::TT_2d_texture) {
+    Texture::TextureType type = ptex.get_texture_type();
+    if (type == Texture::TT_1d_texture ||
+        type == Texture::TT_2d_texture) {
       // Single-faced texture, check the image file and (if we have one) the
       // alpha file.
 
-      if (_output_filename.compare_timestamps(ptex->get_image_fullpath()) > 0) {
-        if (!ptex->has_alpha_image_filename()) {
+      if (_output_filename.compare_timestamps(ptex.get_image_fullpath()) > 0) {
+        if (!ptex.has_alpha_image_filename()) {
           // Everything up-to-date.
           needs_rewrite = false;
-        } else if (_output_filename.compare_timestamps(ptex->get_alpha_image_fullpath()) > 0) {
+        } else if (_output_filename.compare_timestamps(ptex.get_alpha_image_fullpath()) > 0) {
           // Everything up-to-date.
           needs_rewrite = false;
         }
@@ -83,17 +103,17 @@ run() {
       // This is a texture that has multiple slices.  We need to compare the
       // timestamps of each slice image file to the output.
 
-      Filename pattern = ptex->get_image_filename();
+      Filename pattern = ptex.get_image_filename();
       pattern.set_pattern(true);
 
-      Filename alpha_pattern = ptex->get_alpha_image_filename();
+      Filename alpha_pattern = ptex.get_alpha_image_filename();
       alpha_pattern.set_pattern(true);
-      bool has_alpha = ptex->has_alpha_image_filename();
+      bool has_alpha = ptex.has_alpha_image_filename();
 
-      path.append_directory(ptex->get_fullpath().get_dirname());
+      path.append_directory(ptex_filename.get_dirname());
 
       bool all_ok = true;
-      for (int i = 0; i < ptex->get_num_pages(); i++) {
+      for (int i = 0; i < ptex.get_num_pages(); i++) {
         Filename page_filename = pattern.get_filename_index(i);
         if (page_filename.resolve_filename(path)) {
           if (_output_filename.compare_timestamps(page_filename) <= 0) {
@@ -125,7 +145,7 @@ run() {
   }
 
   PT(Texture) tex = new Texture(_input_filename.get_basename_wo_extension());
-  if (!tex->read_ptex(ptex)) {
+  if (!tex->read_ptex(elem)) {
     std::cerr << "Could not read the input texture into the texture object!\n";
     return false;
   }
