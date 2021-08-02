@@ -292,6 +292,11 @@ parse_command_line(int argc, char **argv) {
   extern int optind;
   optind = 0;
 
+#if !defined(HAVE_GETOPT) || !defined(HAVE_GETOPT_LONG_ONLY)
+  // We're using a Panda implementation of getopt. Let's reset that as well.
+  pgetopt_reset();
+#endif
+
   _program_name = Filename::from_os_specific(argv[0]);
   int i;
   for (i = 1; i < argc; i++) {
