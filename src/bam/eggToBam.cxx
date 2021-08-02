@@ -182,8 +182,7 @@ run() {
   }
 
   if (index->get_num_trees() == 0) {
-    nout << "There is no model tree index!\n";
-    exit(1);
+    nout << "WARNING: No model tree indexes loaded\n";
   }
 
   PT(PandaNode) root = load_egg_data(_data);
@@ -192,59 +191,75 @@ run() {
     exit(1);
   }
 
-  // Collect all the materials and textures from the RenderStates.  We need to
-  // remap the filenames to the install tree.
-  collect_materials(root);
+  if (index->get_num_trees() > 0) {
+    // If we have a model tree index, use that to remap textures and materials
+    // where applicable.  If a texture or material is referenced that exists
+    // in the model index, remap the filename to the coincident filename in the
+    // install tree.
 
-  ModelIndex::Tree *tree = index->get_tree(index->get_num_trees() - 1);
-  ModelIndex::AssetIndex *mat_assets = tree->_asset_types["materials"];
-  ModelIndex::AssetIndex *tex_assets = tree->_asset_types["textures"];
+    // Collect all the materials and textures from the RenderStates.  We need to
+    // remap the filenames to the install tree.
+    collect_materials(root);
 
-  for (auto it = _materials.begin(); it != _materials.end(); ++it) {
-    Material *mat = *it;
+    ModelIndex::Tree *tree = index->get_tree(index->get_num_trees() - 1);
 
-    auto mit = mat_assets->_assets.find(mat->get_filename().get_basename_wo_extension());
-    if (mit == mat_assets->_assets.end()) {
-      nout << "Material " << mat->get_filename()
-           << " does not exist in the model index!  Add it to a Sources.pp file.\n";
-      exit(1);
+    auto mit = tree->_asset_types.find("materials");
+    if (mit != tree->_asset_types.end()) {
+      ModelIndex::AssetIndex *mat_assets = (*mit).second;
+
+      for (auto it = _materials.begin(); it != _materials.end(); ++it) {
+        Material *mat = *it;
+
+        auto mi = mat_assets->_assets.find(mat->get_filename().get_basename_wo_extension());
+        if (mi == mat_assets->_assets.end()) {
+          nout << "Material " << mat->get_filename()
+              << " does not exist in the model index!  Add it to a Sources.pp file.\n";
+          exit(1);
+        }
+
+        ModelIndex::Asset *mat_asset = (*mi).second;
+
+        nout << "Remapping material " << mat->get_filename() << " to " << mat_asset->_built << "\n";
+
+        Filename rel_path = mat_asset->_built;
+        rel_path.make_canonical();
+        rel_path.make_relative_to(tree->_install_dir, false);
+        mat->set_filename(rel_path);
+        mat->set_fullpath(mat_asset->_built);
+      }
     }
 
-    ModelIndex::Asset *mat_asset = (*mit).second;
+    auto tit = tree->_asset_types.find("textures");
+    if (tit != tree->_asset_types.end()) {
+      ModelIndex::AssetIndex *tex_assets = (*tit).second;
+      // Also remap any textures that are part of a RenderState that didn't come
+      // from a .pmat.
+      for (auto it = _textures.begin(); it != _textures.end(); ++it) {
+        Texture *tex = *it;
 
-    nout << "Remapping material " << mat->get_filename() << " to " << mat_asset->_built << "\n";
+        auto ti = tex_assets->_assets.find(tex->get_filename().get_basename_wo_extension());
+        if (ti == tex_assets->_assets.end()) {
+          // Commenting this out to support the palettizer.
+          //nout << "Texture " << tex->get_filename()
+          //    << " does not exist in the model index!  Add it to a Sources.pp file.\n";
+          //exit(1);
+          continue;
+        }
 
-    Filename rel_path = mat_asset->_built;
-    rel_path.make_canonical();
-    rel_path.make_relative_to(tree->_install_dir, false);
-    mat->set_filename(rel_path);
-    mat->set_fullpath(mat_asset->_built);
-  }
+        ModelIndex::Asset *tex_asset = (*ti).second;
 
-  // Also remap any textures that are part of a RenderState that didn't come
-  // from a .pmat.
-  for (auto it = _textures.begin(); it != _textures.end(); ++it) {
-    Texture *tex = *it;
+        nout << "Remapping texture " << tex->get_filename() << " to " << tex_asset->_built << "\n";
 
-    auto ti = tex_assets->_assets.find(tex->get_filename().get_basename_wo_extension());
-    if (ti == tex_assets->_assets.end()) {
-      nout << "Texture " << tex->get_filename()
-           << " does not exist in the model index!  Add it to a Sources.pp file.\n";
-      exit(1);
-    }
+        Filename rel_path = tex_asset->_built;
+        rel_path.make_canonical();
+        rel_path.make_relative_to(tree->_install_dir, false);
+        tex->set_filename(rel_path);
+        tex->set_fullpath(tex_asset->_built);
 
-    ModelIndex::Asset *tex_asset = (*ti).second;
-
-    nout << "Remapping texture " << tex->get_filename() << " to " << tex_asset->_built << "\n";
-
-    Filename rel_path = tex_asset->_built;
-    rel_path.make_canonical();
-    rel_path.make_relative_to(tree->_install_dir, false);
-    tex->set_filename(rel_path);
-    tex->set_fullpath(tex_asset->_built);
-
-    if (tex_asset->_built.get_extension() == "txo") {
-      tex->set_loaded_from_txo();
+        if (tex_asset->_built.get_extension() == "txo") {
+          tex->set_loaded_from_txo();
+        }
+      }
     }
   }
 
