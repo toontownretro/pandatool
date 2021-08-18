@@ -502,7 +502,6 @@ find_textures_modern(const string &shadername, MayaShaderColorList &list, MPlug 
     return;
   }
   MPlug outplug = outplugs[0];
-  MPlug plg;
   MObject source = outplug.node();
   MFnDependencyNode sourceFn(source);
 
