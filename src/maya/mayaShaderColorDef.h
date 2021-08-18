@@ -90,7 +90,8 @@ public:
   LVector2 _translate_frame;
   double _rotate_frame;
 
-  bool _mirror;
+  bool _mirror_u;
+  bool _mirror_v;
   bool _stagger;
   bool _wrap_u;
   bool _wrap_v;

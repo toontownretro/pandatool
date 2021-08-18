@@ -53,7 +53,8 @@ MayaShaderColorDef() {
   _translate_frame.set(0.0, 0.0);
   _rotate_frame = 0.0;
 
-  _mirror = false;
+  _mirror_u = false;
+  _mirror_v = false;
   _stagger = false;
   _wrap_u = true;
   _wrap_v = true;
@@ -103,7 +104,8 @@ MayaShaderColorDef(MayaShaderColorDef &copy) {
   _translate_frame = copy._translate_frame;
   _rotate_frame = copy._rotate_frame;
 
-  _mirror = copy._mirror;
+  _mirror_u = copy._mirror_u;
+  _mirror_v = copy._mirror_v;
   _stagger = copy._stagger;
   _wrap_u = copy._wrap_u;
   _wrap_v = copy._wrap_v;
@@ -186,7 +188,8 @@ write(std::ostream &out) const {
         << "    coverage is " << _coverage << "\n"
         << "    translate_frame is " << _translate_frame << "\n"
         << "    rotate_frame is " << _rotate_frame << "\n"
-        << "    mirror is " << _mirror << "\n"
+        << "    mirror_u is " << _mirror_u << "\n"
+        << "    mirror_v is " << _mirror_v << "\n"
         << "    stagger is " << _stagger << "\n"
         << "    wrap_u is " << _wrap_u << "\n"
         << "    wrap_v is " << _wrap_v << "\n"
@@ -287,7 +290,8 @@ find_textures_legacy(MayaShader *shader, MObject color, bool trans) {
 
     // get_bool_attribute(color, "alphaIsLuminance", _alpha_is_luminance);
 
-    get_bool_attribute(color, "mirror", _mirror);
+    get_bool_attribute(color, "mirror", _mirror_u);
+    get_bool_attribute(color, "mirror", _mirror_v);
     get_bool_attribute(color, "stagger", _stagger);
     get_bool_attribute(color, "wrapU", _wrap_u);
     get_bool_attribute(color, "wrapV", _wrap_v);
@@ -498,6 +502,7 @@ find_textures_modern(const string &shadername, MayaShaderColorList &list, MPlug 
     return;
   }
   MPlug outplug = outplugs[0];
+  MPlug plg;
   MObject source = outplug.node();
   MFnDependencyNode sourceFn(source);
 
@@ -525,18 +530,21 @@ find_textures_modern(const string &shadername, MayaShaderColorList &list, MPlug 
     def->_texture_filename = Filename::from_os_specific(filename);
     def->_texture_name = sourceFn.name().asChar();
 
-    get_vec2_attribute(source, "coverage",       def->_coverage);
-    get_vec2_attribute(source, "translateFrame", def->_translate_frame);
-    get_angle_attribute(source, "rotateFrame",    def->_rotate_frame);
+    get_vec2_attribute(sourceFn,  "cu",  "cv",         def->_coverage);
+    get_vec2_attribute(sourceFn,  "tfu", "tfv",        def->_translate_frame);
+    
+    get_angle_attribute(sourceFn, "rf",        def->_rotate_frame);
+    
+    get_bool_attribute(sourceFn, "mu",            def->_mirror_u);
+    get_bool_attribute(sourceFn, "mv",            def->_mirror_v);
+    get_bool_attribute(sourceFn, "s",             def->_stagger);
+    get_bool_attribute(sourceFn, "wu",            def->_wrap_u);
+    get_bool_attribute(sourceFn, "wv",            def->_wrap_v);
 
-    get_bool_attribute(source, "mirror",          def->_mirror);
-    get_bool_attribute(source, "stagger",         def->_stagger);
-    get_bool_attribute(source, "wrapU",           def->_wrap_u);
-    get_bool_attribute(source, "wrapV",           def->_wrap_v);
-
-    get_vec2_attribute(source, "repeatUV",       def->_repeat_uv);
-    get_vec2_attribute(source, "offset",         def->_offset);
-    get_angle_attribute(source, "rotateUV",       def->_rotate_uv);
+    get_vec2_attribute(sourceFn,  "reu", "rev",        def->_repeat_uv);
+    get_vec2_attribute(sourceFn,  "ofu", "ofv",        def->_offset);
+    
+    get_angle_attribute(sourceFn, "rotateUV",         def->_rotate_uv);
 
     LRGBColor color_gain;
     PN_stdfloat alpha_gain;

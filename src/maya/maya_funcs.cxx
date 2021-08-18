@@ -65,6 +65,33 @@ get_maya_plug(MObject &node, const string &attribute_name, MPlug &plug) {
 }
 
 /**
+ * Gets the named MPlug associated, if any.
+ */
+bool
+get_maya_plug(MFnDependencyNode &node, const string &attribute_name, MPlug &plug) {
+  MStatus status;
+  
+  MObject attr = node.attribute(attribute_name.c_str(), &status);
+  if (!status) {
+    maya_cat.error()
+      << "Attribute " << attribute_name << " on " << node.name().asChar()
+      << " is not an Attribute.\n";
+    return false;
+  }
+
+  MFnAttribute attr_fn(attr, &status);
+  if (!status) {
+    maya_cat.error()
+      << "Attribute " << attribute_name << " on " << node.name().asChar()
+      << " is a " << attr.apiTypeStr() << ", not an Attribute.\n";
+    return false;
+  }
+
+  plug = node.findPlug(attr);
+  return true;
+}
+
+/**
  * Returns true if the named connection exists on the node and is connected to
  * anything, false otherwise.
  */
@@ -173,6 +200,24 @@ get_bool_attribute(MObject &node, const string &attribute_name,
 }
 
 /**
+ * Extracts the named boolean attribute from the MFnDependencyNode.
+ */
+bool
+get_bool_attribute(MFnDependencyNode &node, const string &attribute_name,
+                   bool &value) {
+  MPlug plg;
+  if (!get_maya_plug(node, attribute_name, plg)) {
+    maya_cat.warning()
+      << "Attribute " << attribute_name
+      << " does not have a bool value.\n";
+    return false;
+  }
+
+  plg.getValue(value);
+  return true;
+}
+
+/**
  * Extracts the named angle in degrees from the MObject.
  */
 bool
@@ -186,6 +231,26 @@ get_angle_attribute(MObject &node, const string &attribute_name,
     describe_maya_attribute(node, attribute_name);
     return false;
   }
+  value = maya_value.asDegrees();
+  return true;
+}
+
+/**
+ * Extracts the named angle in degrees from the MFnDependencyNode.
+ */
+bool
+get_angle_attribute(MFnDependencyNode &node, const string &attribute_name,
+                    double &value) {
+  MAngle maya_value;
+  MPlug plg;
+  if (!get_maya_plug(node, attribute_name, plg)) {
+    maya_cat.warning()
+      << "Attribute " << attribute_name
+      << " does not have a angle value.\n";
+    return false;
+  }
+
+  plg.getValue(maya_value);
   value = maya_value.asDegrees();
   return true;
 }
@@ -221,6 +286,36 @@ get_vec2_attribute(MObject &node, const string &attribute_name,
       << "Unable to extract 2 floats from " << attribute_name
       << ", of type " << vec2_object.apiTypeStr() << "\n";
   }
+
+  return true;
+}
+
+/**
+ * Extracts the named two-component vector from the MFnDependencyNode.
+ */
+bool
+get_vec2_attribute(MFnDependencyNode &node, const string &attribute_name1,
+                    const string &attribute_name2, LVecBase2 &value) {
+  MStatus status;
+  MPlug plg;
+  
+  if (!get_maya_plug(node, attribute_name1, plg)) {
+    maya_cat.warning()
+      << "Attribute " << attribute_name1
+      << " does not have a float object value.\n";
+    return false;
+  }
+
+  plg.getValue(value[0]);
+  
+  if (!get_maya_plug(node, attribute_name2, plg)) {
+    maya_cat.warning()
+      << "Attribute " << attribute_name2
+      << " does not have a float object value.\n";
+    return false;
+  }
+
+  plg.getValue(value[1]);
 
   return true;
 }

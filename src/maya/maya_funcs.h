@@ -33,6 +33,9 @@ bool
 get_maya_plug(MObject &node, const std::string &attribute_name, MPlug &plug);
 
 bool
+get_maya_plug(MFnDependencyNode &node, const std::string &attribute_name, MPlug &plug);
+
+bool
 is_connected(MObject &node, const std::string &attribute_name);
 
 template<class ValueType>
@@ -54,14 +57,26 @@ remove_attribute(MObject &node, const std::string &attribute_name);
 bool
 get_bool_attribute(MObject &node, const std::string &attribute_name,
                    bool &value);
+                   
+bool
+get_bool_attribute(MFnDependencyNode &node, const std::string &attribute_name,
+                   bool &value);
 
 bool
 get_angle_attribute(MObject &node, const std::string &attribute_name,
+                    double &value);
+                    
+bool
+get_angle_attribute(MFnDependencyNode &node, const std::string &attribute_name,
                     double &value);
 
 bool
 get_vec2_attribute(MObject &node, const std::string &attribute_name,
                     LVecBase2 &value);
+                    
+bool
+get_vec2_attribute(MFnDependencyNode &node, const std::string &attribute_name1,
+                    const std::string &attribute_name2, LVecBase2 &value);
 
 bool
 get_vec3_attribute(MObject &node, const std::string &attribute_name,

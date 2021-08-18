@@ -385,7 +385,8 @@ bool MayaShader::try_pair(MayaShaderColorDef *map1,
       (map1->_u_angle           != map2->_u_angle) ||
       (map1->_v_angle           != map2->_v_angle) ||
       (map1->_uvset_name        != map2->_uvset_name) ||
-      (map1->_mirror            != map2->_mirror) ||
+      (map1->_mirror_u          != map2->_mirror_u) ||
+      (map1->_mirror_v          != map2->_mirror_v) ||
       (map1->_stagger           != map2->_stagger) ||
       (map1->_wrap_u            != map2->_wrap_u) ||
       (map1->_wrap_v            != map2->_wrap_v) ||
