@@ -358,11 +358,13 @@ static int enable_line_buffering(PyObject *file) {
 
 /* Main program */
 
-#ifdef WIN_UNICODE
-int Py_FrozenMain(int argc, wchar_t **argv)
-#else
+//#ifdef WIN_UNICODE
+//#pragma message("win unicode")
+//int Py_FrozenMain(int argc, wchar_t **argv)
+//#else
+//#pragma message("win not unicode")
 int Py_FrozenMain(int argc, char **argv)
-#endif
+//#endif
 {
     char *p;
     int n, sts = 1;
