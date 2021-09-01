@@ -42,6 +42,9 @@ protected:
 private:
   void collect_materials(PandaNode *node);
 
+  void convert_txo(Texture *tex);
+  bool make_buffer();
+
 private:
   // This is the set of all materials referenced by the egg file that need to
   // remapped to their installed counterpart.
@@ -64,6 +67,20 @@ private:
   bool _compression_off;
   bool _got_index_filename;
   Filename _index_filename;
+
+  bool _tex_rawdata;
+  bool _tex_txo;
+  bool _tex_txopz;
+  bool _tex_ctex;
+  bool _tex_mipmap;
+  std::string _ctex_quality;
+  std::string _load_display;
+
+  // The rest of this is required to support -ctex.
+  PT(GraphicsPipe) _pipe;
+  GraphicsStateGuardian *_gsg;
+  GraphicsEngine *_engine;
+  GraphicsOutput *_buffer;
 };
 
 #endif

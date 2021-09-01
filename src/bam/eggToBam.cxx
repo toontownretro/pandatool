@@ -131,11 +131,107 @@ EggToBam() :
      "to the root installation directory.",
      &EggToBam::dispatch_filename, &_got_index_filename, &_index_filename);
 
+  add_option
+    ("rawtex", "", 0,
+     "Record texture data directly in the bam file, instead of storing "
+     "a reference to the texture elsewhere on disk.  The textures are "
+     "stored uncompressed, unless -ctex is also specified.  "
+     "A particular texture that is encoded into "
+     "multiple different bam files in this way cannot be unified into "
+     "the same part of texture memory if the different bam files are loaded "
+     "together.  That being said, this can sometimes be a convenient "
+     "way to ensure the bam file is completely self-contained.",
+     &EggToBam::dispatch_none, &_tex_rawdata);
+
+  add_option
+    ("txo", "", 0,
+     "Rather than writing texture data directly into the bam file, as in "
+     "-rawtex, create a texture object for each referenced texture.  A "
+     "texture object is a kind of mini-bam file, with a .txo extension, "
+     "that contains all of the data needed to recreate a texture, including "
+     "its image contents, filter and wrap settings, and so on.  3-D textures "
+     "and cube maps can also be represented in a single .txo file.  Texture "
+     "object files, like bam files, are tied to a particular version of "
+     "Panda.",
+     &EggToBam::dispatch_none, &_tex_txo);
+
+#ifdef HAVE_ZLIB
+  add_option
+    ("txopz", "", 0,
+     "In addition to writing texture object files as above, compress each "
+     "one using pzip to a .txo.pz file.  In many cases, this will yield a "
+     "disk file size comparable to that achieved by png compression.  This "
+     "is an on-disk compression only, and does not affect the amount of "
+     "RAM or texture memory consumed by the texture when it is loaded.",
+     &EggToBam::dispatch_none, &_tex_txopz);
+#endif  // HAVE_ZLIB
+
+  add_option
+    ("ctex", "", 0,
+#ifdef HAVE_SQUISH
+     "Pre-compress the texture images using the libsquish library, when "
+     "using -rawtex or -txo.  "
+#else
+     "Asks the graphics card to pre-compress the texture images when using "
+     "-rawtex or -txo.  "
+#endif  // HAVE_SQUISH
+#ifdef HAVE_ZLIB
+     "This is unrelated to the on-disk compression achieved "
+     "via -txopz (and it may be used in conjunction with that parameter).  "
+#endif  // HAVE_ZLIB
+     "This will result in a smaller RAM and texture memory footprint for "
+     "the texture images.  The same "
+     "effect can be achieved at load time by setting compressed-textures in "
+     "your Config.prc file; but -ctex pre-compresses the "
+     "textures so that they do not need to be compressed at load time.  "
+#ifndef HAVE_SQUISH
+     "Note that, since your Panda is not compiled with the libsquish "
+     "library, using -ctex will make .txo files that are only guaranteed "
+     "to load on the particular graphics card that was used to "
+     "generate them."
+#endif  // HAVE_SQUISH
+     ,
+     &EggToBam::dispatch_none, &_tex_ctex);
+
+  add_option
+    ("mipmap", "", 0,
+     "Records the pre-generated mipmap levels in the texture object file "
+     "when using -rawtex or -txo, regardless of the texture filter mode.  This "
+     "will increase the size of the texture object file by about 33%, but "
+     "it prevents the need to compute the mipmaps at runtime.  The default "
+     "is to record mipmap levels only when the texture uses a mipmap "
+     "filter mode.",
+     &EggToBam::dispatch_none, &_tex_mipmap);
+
+  add_option
+    ("ctexq", "quality", 0,
+     "Specifies the compression quality to use when performing the "
+     "texture compression requested by -ctex.  This may be one of "
+     "'default', 'fastest', 'normal', or 'best'.  The default is 'best'.  "
+     "Set it to 'default' to use whatever is specified by the Config.prc "
+     "file.  This is a global setting only; individual texture quality "
+     "settings appearing within the egg file will override this.",
+     &EggToBam::dispatch_string, nullptr, &_ctex_quality);
+
+  add_option
+    ("load-display", "display name", 0,
+     "Specifies the particular display module to load to perform the texture "
+     "compression requested by -ctex.  If this is omitted, the default is "
+     "taken from the Config.prc file."
+#ifdef HAVE_SQUISH
+     "  Since your Panda has libsquish compiled in, this is not necessary; "
+     "Panda can compress textures without loading a display module."
+#endif  // HAVE_SQUISH
+     ,
+     &EggToBam::dispatch_string, nullptr, &_load_display);
+
   _force_complete = true;
   _got_index_filename = false;
   _egg_flatten = 0;
   _egg_combine_geoms = 0;
   _egg_suppress_hidden = 1;
+  _tex_txopz = false;
+  _ctex_quality = "best";
 }
 
 /**
@@ -167,6 +263,13 @@ run() {
     compress_chan_quality = _compression_quality;
   }
 
+  if (_ctex_quality != "default") {
+    // Override the user's config file with the command-line parameter for
+    // texture compression.
+    std::string prc = "texture-quality-level " + _ctex_quality;
+    load_prc_file_data("prc", prc);
+  }
+
   if (!_got_coordinate_system) {
     // If the user didn't specify otherwise, ensure the coordinate system is
     // Z-up.
@@ -191,15 +294,30 @@ run() {
     exit(1);
   }
 
+  if (_tex_ctex) {
+#ifndef HAVE_SQUISH
+    if (!make_buffer()) {
+      nout << "Unable to initialize graphics context; cannot compress textures.\n";
+      exit(1);
+    }
+#endif  // HAVE_SQUISH
+  }
+
+  // Should we convert textures referenced in the bam file into txo here?
+  // This is here to support the egg-palettizer pipeline.
+  bool should_convert_txo = (_tex_txo || _tex_txopz || (_tex_ctex && _tex_rawdata));
+
+  if (index->get_num_trees() > 0 || should_convert_txo) {
+    // Collect all the materials and textures from the RenderStates.  We need to
+    // remap the filenames to the install tree.
+    collect_materials(root);
+  }
+
   if (index->get_num_trees() > 0) {
     // If we have a model tree index, use that to remap textures and materials
     // where applicable.  If a texture or material is referenced that exists
     // in the model index, remap the filename to the coincident filename in the
     // install tree.
-
-    // Collect all the materials and textures from the RenderStates.  We need to
-    // remap the filenames to the install tree.
-    collect_materials(root);
 
     ModelIndex::Tree *tree = index->get_tree(index->get_num_trees() - 1);
 
@@ -263,6 +381,44 @@ run() {
     }
   }
 
+  if (should_convert_txo) {
+    Textures::iterator ti;
+    for (ti = _textures.begin(); ti != _textures.end(); ++ti) {
+      Texture *tex = (*ti);
+      tex->get_ram_image();
+      bool want_mipmaps = (_tex_mipmap || tex->uses_mipmaps());
+      if (want_mipmaps) {
+        // Generate mipmap levels.
+        tex->generate_ram_mipmap_images();
+      }
+
+      if (_tex_ctex) {
+#ifdef HAVE_SQUISH
+        if (!tex->compress_ram_image()) {
+          nout << "  couldn't compress " << tex->get_name() << "\n";
+        }
+        tex->set_compression(Texture::CM_on);
+#else  // HAVE_SQUISH
+        tex->set_keep_ram_image(true);
+        bool has_mipmap_levels = (tex->get_num_ram_mipmap_images() > 1);
+        if (!_engine->extract_texture_data(tex, _gsg)) {
+          nout << "  couldn't compress " << tex->get_name() << "\n";
+        }
+        if (!has_mipmap_levels && !want_mipmaps) {
+          // Make sure we didn't accidentally introduce mipmap levels by
+          // rendezvousing through the graphics card.
+          tex->clear_ram_mipmap_images();
+        }
+        tex->set_keep_ram_image(false);
+#endif  // HAVE_SQUISH
+      }
+
+      if (_tex_txo || _tex_txopz) {
+        convert_txo(tex);
+      }
+    }
+  }
+
   if (_ls) {
     root->ls(nout, 0);
   }
@@ -296,15 +452,19 @@ handle_args(ProgramBase::Args &args) {
   // If the user specified a path store option, we need to set the bam-
   // texture-mode Config.prc variable directly to support this (otherwise the
   // bam code will do what it wants to do anyway).
-  if (true || _got_path_store) {
+  if (_tex_rawdata) {
+    bam_texture_mode = BamFile::BTM_rawdata;
+
+  } else if (_got_path_store) {
     bam_texture_mode = BamFile::BTM_unchanged;
-    bam_material_mode = BamFile::BTM_unchanged;
 
   } else {
     // Otherwise, the default path store is absolute; then the bam-texture-
     // mode can do the appropriate thing to it.
     _path_replace->_path_store = PS_absolute;
   }
+
+  bam_material_mode = BamFile::BTM_unchanged;
 
   return EggToSomething::handle_args(args);
 }
@@ -365,6 +525,58 @@ collect_materials(PandaNode *node) {
   int num_children = children.get_num_children();
   for (int i = 0; i < num_children; ++i) {
     collect_materials(children.get_child(i));
+  }
+}
+
+/**
+ * If the indicated Texture was not already loaded from a txo file, writes it
+ * to a txo file and updates the Texture object to reference the new file.
+ */
+void EggToBam::
+convert_txo(Texture *tex) {
+  if (!tex->get_loaded_from_txo()) {
+    Filename orig_fullpath = tex->get_fullpath().get_filename_index(0);
+    Filename fullpath = tex->get_fullpath().get_filename_index(0);
+    if (_tex_txopz) {
+      fullpath.set_extension("txo.pz");
+      // We use this clumsy syntax so that the new extension appears to be two
+      // separate extensions, .txo followed by .pz, which is what
+      // Texture::write() expects to find.
+      fullpath = Filename(fullpath.get_fullpath());
+    } else {
+      fullpath.set_extension("txo");
+    }
+
+    // Compare the timestamp of the output filename to the original filename.
+    // If the output filename doesn't exist or is newer than the original
+    // filename, we don't have to actually do anything.
+    if (fullpath.compare_timestamps(orig_fullpath) > 0) {
+      // The output filename is newer than the original, so we don't have to
+      // write a txo.
+      return;
+    }
+
+    if (tex->write(fullpath)) {
+      nout << "  Writing " << fullpath;
+      if (tex->get_ram_image_compression() != Texture::CM_off) {
+        nout << " (compressed " << tex->get_ram_image_compression() << ")";
+      }
+      nout << "\n";
+      tex->set_loaded_from_txo();
+      tex->set_fullpath(fullpath);
+      tex->clear_alpha_fullpath();
+
+      Filename filename = tex->get_filename().get_filename_index(0);
+      if (_tex_txopz) {
+        filename.set_extension("txo.pz");
+        filename = Filename(filename.get_fullpath());
+      } else {
+        filename.set_extension("txo");
+      }
+
+      tex->set_filename(filename);
+      tex->clear_alpha_filename();
+    }
   }
 }
 
