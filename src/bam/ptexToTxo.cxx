@@ -17,6 +17,7 @@
 #include "texturePool.h"
 #include "pdxValue.h"
 #include "virtualFileSystem.h"
+#include "config_gobj.h"
 
 /**
  *
@@ -25,6 +26,9 @@ PTexToTxo::
 PTexToTxo() :
   ProgramBase("ptex2txo"),
   WithOutputFile(true, false, true) {
+
+  // Need actual image data here.
+  textures_header_only = false;
 
   set_program_brief("convert a .ptex file to a .txo file");
   set_program_description

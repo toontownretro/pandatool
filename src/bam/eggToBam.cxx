@@ -46,8 +46,6 @@ EggToBam::
 EggToBam() :
   EggToSomething("Bam", ".bam", true, false)
 {
-  // Filename references must be used to compare RenderStates.
-  get_uniquify_states_ignore_filenames() = false;
   textures_header_only = true;
 
   set_program_brief("convert .egg files to .bam files");
@@ -382,10 +380,55 @@ run() {
   }
 
   if (should_convert_txo) {
+    // Make sure we load the actual texture images when converting them.
+    textures_header_only = false;
+
     Textures::iterator ti;
     for (ti = _textures.begin(); ti != _textures.end(); ++ti) {
       Texture *tex = (*ti);
+
+      if (_tex_txo || _tex_txopz) {
+        Filename orig_fullpath = tex->get_fullpath().get_filename_index(0);
+        Filename fullpath = tex->get_fullpath().get_filename_index(0);
+        if (_tex_txopz) {
+          fullpath.set_extension("txo.pz");
+          // We use this clumsy syntax so that the new extension appears to be two
+          // separate extensions, .txo followed by .pz, which is what
+          // Texture::write() expects to find.
+          fullpath = Filename(fullpath.get_fullpath());
+        } else {
+          fullpath.set_extension("txo");
+        }
+
+        // Compare the timestamp of the output filename to the original filename.
+        // If the output filename doesn't exist or is newer than the original
+        // filename, we don't have to actually do anything.
+        if (fullpath.compare_timestamps(orig_fullpath) > 0) {
+          // The output filename is newer than the original, so we don't have to
+          // write a txo.  Just remap the texture to the txo version.
+          tex->set_fullpath(fullpath);
+          tex->set_loaded_from_txo();
+          tex->clear_alpha_filename();
+          tex->clear_alpha_fullpath();
+          Filename filename = tex->get_filename().get_filename_index(0);
+          if (_tex_txopz) {
+            filename.set_extension("txo.pz");
+            filename = Filename(filename.get_fullpath());
+          } else {
+            filename.set_extension("txo");
+          }
+          tex->set_filename(filename);
+          continue;
+        }
+      }
+
+      // We need to either write a txo version of this texture or embed it
+      // into the bam file.  We need the raw image data.
+
+      // Reload the raw image data of the texture.
+      tex->clear_ram_image();
       tex->get_ram_image();
+
       bool want_mipmaps = (_tex_mipmap || tex->uses_mipmaps());
       if (want_mipmaps) {
         // Generate mipmap levels.
@@ -417,6 +460,7 @@ run() {
         convert_txo(tex);
       }
     }
+    textures_header_only = true;
   }
 
   if (_ls) {
@@ -535,7 +579,6 @@ collect_materials(PandaNode *node) {
 void EggToBam::
 convert_txo(Texture *tex) {
   if (!tex->get_loaded_from_txo()) {
-    Filename orig_fullpath = tex->get_fullpath().get_filename_index(0);
     Filename fullpath = tex->get_fullpath().get_filename_index(0);
     if (_tex_txopz) {
       fullpath.set_extension("txo.pz");
@@ -547,17 +590,8 @@ convert_txo(Texture *tex) {
       fullpath.set_extension("txo");
     }
 
-    // Compare the timestamp of the output filename to the original filename.
-    // If the output filename doesn't exist or is newer than the original
-    // filename, we don't have to actually do anything.
-    if (fullpath.compare_timestamps(orig_fullpath) > 0) {
-      // The output filename is newer than the original, so we don't have to
-      // write a txo.
-      return;
-    }
-
     if (tex->write(fullpath)) {
-      nout << "  Writing " << fullpath;
+      nout << "  Wrote " << fullpath;
       if (tex->get_ram_image_compression() != Texture::CM_off) {
         nout << " (compressed " << tex->get_ram_image_compression() << ")";
       }
