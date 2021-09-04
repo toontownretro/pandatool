@@ -45,6 +45,7 @@ public:
   virtual void zero_channels(const std::string &components);
   virtual void quantize_channels(const std::string &components, double quantum);
   virtual void apply_default_pose(EggJointPointer *source_joint, int frame);
+  virtual void apply_default_pose(const LMatrix4d &mat);
 
   virtual EggJointPointer *make_new_joint(const std::string &name)=0;
 

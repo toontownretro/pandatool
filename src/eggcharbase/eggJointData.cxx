@@ -411,6 +411,22 @@ apply_default_pose(int source_model, int frame) {
 }
 
 /**
+ * Applies the indicated transform as the initial pose of this joint.
+ */
+void EggJointData::
+apply_default_pose(const LMatrix4d &mat) {
+  BackPointers::iterator bpi;
+  for (bpi = _back_pointers.begin(); bpi != _back_pointers.end(); ++bpi) {
+    EggBackPointer *back = (*bpi);
+    if (back != nullptr) {
+      EggJointPointer *joint;
+      DCAST_INTO_V(joint, back);
+      joint->apply_default_pose(mat);
+    }
+  }
+}
+
+/**
  * Adds the indicated model joint or anim table to the data.
  */
 void EggJointData::

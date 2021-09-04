@@ -18,7 +18,7 @@
 #include "load_egg_file.h"
 #include "config_egg2pg.h"
 #include "config_gobj.h"
-#include "config_chan.h"
+#include "config_anim.h"
 #include "pandaNode.h"
 #include "geomNode.h"
 #include "renderState.h"
@@ -34,15 +34,10 @@
 #include "datagramIterator.h"
 #include "datagram.h"
 #include "virtualFileSystem.h"
-
-/**
- *
- */
-EggToBam::TxoTexture::
-TxoTexture() {
-  _img_timestamp = 0;
-  _alpha_img_timestamp = 0;
-}
+#include "modelIndex.h"
+#include "material.h"
+#include "materialAttrib.h"
+#include "modelRoot.h"
 
 /**
  *
@@ -51,6 +46,8 @@ EggToBam::
 EggToBam() :
   EggToSomething("Bam", ".bam", true, false)
 {
+  textures_header_only = true;
+
   set_program_brief("convert .egg files to .bam files");
   set_program_description
     ("This program reads Egg files and outputs Bam files, the binary format "
@@ -116,6 +113,21 @@ EggToBam() :
      "Turn off lossy compression of animation channels.  Channels will be "
      "written exactly as they are, losslessly.",
      &EggToBam::dispatch_none, &_compression_off);
+
+  redescribe_option
+    ("cs",
+     "Specify the coordinate system of the resulting " + _format_name +
+     " file.  This may be "
+     "one of 'y-up', 'z-up', 'y-up-left', or 'z-up-left'.  The default "
+     "is z-up.");
+
+  add_option
+    ("i", "filename", 0,
+     "Specify the model index filename for the model tree that the model and "
+     "its referenced textures/materials reside in.  This is used to remap the "
+     "texture pathnames to the built/installed versions and make them relative "
+     "to the root installation directory.",
+     &EggToBam::dispatch_filename, &_got_index_filename, &_index_filename);
 
   add_option
     ("rawtex", "", 0,
@@ -200,13 +212,6 @@ EggToBam() :
      &EggToBam::dispatch_string, nullptr, &_ctex_quality);
 
   add_option
-    ("txocache", "filename", 0,
-     "Specifies the filename to the .txo cache file.  This is used not not "
-     "write the same .txo file over and over again that is referenced by "
-     "multiple models.",
-     &EggToBam::dispatch_filename, &_got_txo_cache, &_txo_cache);
-
-  add_option
     ("load-display", "display name", 0,
      "Specifies the particular display module to load to perform the texture "
      "compression requested by -ctex.  If this is omitted, the default is "
@@ -218,14 +223,8 @@ EggToBam() :
      ,
      &EggToBam::dispatch_string, nullptr, &_load_display);
 
-  redescribe_option
-    ("cs",
-     "Specify the coordinate system of the resulting " + _format_name +
-     " file.  This may be "
-     "one of 'y-up', 'z-up', 'y-up-left', or 'z-up-left'.  The default "
-     "is z-up.");
-
   _force_complete = true;
+  _got_index_filename = false;
   _egg_flatten = 0;
   _egg_combine_geoms = 0;
   _egg_suppress_hidden = 1;
@@ -275,6 +274,18 @@ run() {
     _data->set_coordinate_system(CS_zup_right);
   }
 
+  ModelIndex *index = ModelIndex::get_global_ptr();
+  if (_got_index_filename) {
+    if (!index->read_index(_index_filename)) {
+      nout << "Failed to read model tree index: " << _index_filename << "\n";
+      exit(1);
+    }
+  }
+
+  if (index->get_num_trees() == 0) {
+    nout << "WARNING: No model tree indexes loaded\n";
+  }
+
   PT(PandaNode) root = load_egg_data(_data);
   if (root == nullptr) {
     nout << "Unable to build scene graph from egg file.\n";
@@ -290,68 +301,134 @@ run() {
 #endif  // HAVE_SQUISH
   }
 
-  bool cache_modified = false;
+  // Should we convert textures referenced in the bam file into txo here?
+  // This is here to support the egg-palettizer pipeline.
+  bool should_convert_txo = (_tex_txo || _tex_txopz || (_tex_ctex && _tex_rawdata));
 
-  if (_tex_txo || _tex_txopz || (_tex_ctex && _tex_rawdata)) {
-    VirtualFileSystem *vfs = VirtualFileSystem::get_global_ptr();
+  if (index->get_num_trees() > 0 || should_convert_txo) {
+    // Collect all the materials and textures from the RenderStates.  We need to
+    // remap the filenames to the install tree.
+    collect_materials(root);
+  }
 
-    if ((_tex_txo || _tex_txopz) && _got_txo_cache) {
-      std::cerr << "Loading txo cache " << _txo_cache.get_fullpath() << "\n";
-      _txo_cache.set_binary();
-      vector_uchar data;
-      if (vfs->read_file(_txo_cache, data, true)) {
-        Datagram dg(data);
-        DatagramIterator di(dg);
+  if (index->get_num_trees() > 0) {
+    // If we have a model tree index, use that to remap textures and materials
+    // where applicable.  If a texture or material is referenced that exists
+    // in the model index, remap the filename to the coincident filename in the
+    // install tree.
 
-        uint32_t num_textures = di.get_uint32();
-        for (uint32_t i = 0; i < num_textures; i++) {
-          TxoTexture txo_tex;
-          txo_tex._txo_filename = di.get_string();
-          txo_tex._img_filename = di.get_string();
-          txo_tex._img_timestamp = di.get_uint64();
-          txo_tex._alpha_img_filename = di.get_string();
-          txo_tex._alpha_img_timestamp = di.get_uint64();
-          _txo_textures[txo_tex._txo_filename] = txo_tex;
+    ModelIndex::Tree *tree = index->get_tree(index->get_num_trees() - 1);
+
+    auto mit = tree->_asset_types.find("materials");
+    if (mit != tree->_asset_types.end()) {
+      ModelIndex::AssetIndex *mat_assets = (*mit).second;
+
+      for (auto it = _materials.begin(); it != _materials.end(); ++it) {
+        Material *mat = *it;
+
+        auto mi = mat_assets->_assets.find(mat->get_filename().get_basename_wo_extension());
+        if (mi == mat_assets->_assets.end()) {
+          nout << "Material " << mat->get_filename()
+              << " does not exist in the model index!  Add it to a Sources.pp file.\n";
+          exit(1);
         }
+
+        ModelIndex::Asset *mat_asset = (*mi).second;
+
+        nout << "Remapping material " << mat->get_filename() << " to " << mat_asset->_built << "\n";
+
+        Filename rel_path = mat_asset->_built;
+        rel_path.make_canonical();
+        rel_path.make_relative_to(tree->_install_dir, false);
+        mat->set_filename(rel_path);
+        mat->set_fullpath(mat_asset->_built);
       }
     }
 
-    collect_textures(root);
+    auto tit = tree->_asset_types.find("textures");
+    if (tit != tree->_asset_types.end()) {
+      ModelIndex::AssetIndex *tex_assets = (*tit).second;
+      // Also remap any textures that are part of a RenderState that didn't come
+      // from a .pmat.
+      for (auto it = _textures.begin(); it != _textures.end(); ++it) {
+        Texture *tex = *it;
+
+        auto ti = tex_assets->_assets.find(tex->get_filename().get_basename_wo_extension());
+        if (ti == tex_assets->_assets.end()) {
+          // Commenting this out to support the palettizer.
+          //nout << "Texture " << tex->get_filename()
+          //    << " does not exist in the model index!  Add it to a Sources.pp file.\n";
+          //exit(1);
+          continue;
+        }
+
+        ModelIndex::Asset *tex_asset = (*ti).second;
+
+        nout << "Remapping texture " << tex->get_filename() << " to " << tex_asset->_built << "\n";
+
+        Filename rel_path = tex_asset->_built;
+        rel_path.make_canonical();
+        rel_path.make_relative_to(tree->_install_dir, false);
+        tex->set_filename(rel_path);
+        tex->set_fullpath(tex_asset->_built);
+
+        if (tex_asset->_built.get_extension() == "txo") {
+          tex->set_loaded_from_txo();
+        }
+      }
+    }
+  }
+
+  if (should_convert_txo) {
+    // Make sure we load the actual texture images when converting them.
+    textures_header_only = false;
+
     Textures::iterator ti;
     for (ti = _textures.begin(); ti != _textures.end(); ++ti) {
       Texture *tex = (*ti);
 
-      if (!_tex_rawdata && !tex->get_loaded_from_txo()) {
-        // Check if we've already written this txo in the past.
-
-        Filename txo_filename = tex->get_fullpath().get_filename_index(0);
-        txo_filename.set_extension(_tex_txopz ? "txo.pz" : "txo");
+      if (_tex_txo || _tex_txopz) {
+        Filename orig_fullpath = tex->get_fullpath().get_filename_index(0);
+        Filename fullpath = tex->get_fullpath().get_filename_index(0);
         if (_tex_txopz) {
+          fullpath.set_extension("txo.pz");
           // We use this clumsy syntax so that the new extension appears to be two
           // separate extensions, .txo followed by .pz, which is what
           // Texture::write() expects to find.
-          txo_filename = Filename(txo_filename.get_fullpath());
+          fullpath = Filename(fullpath.get_fullpath());
+        } else {
+          fullpath.set_extension("txo");
         }
 
-        TxoTextures::const_iterator it = _txo_textures.find(txo_filename);
-        if (it != _txo_textures.end()) {
-          // We have.  If the original image timestamps are the same, there is
-          // no need to write the txo again.
-          const TxoTexture &txo_tex = (*it).second;
-          if (txo_tex._img_timestamp == tex->get_fullpath().get_timestamp() &&
-              txo_tex._alpha_img_timestamp == tex->get_alpha_fullpath().get_timestamp()) {
-            // Everything is the same, don't write a txo.
-            std::cerr << txo_filename.get_fullpath() << " does not need to be rewritten.\n";
-
-            // Just modify the texture to reference the txo instead.
-            set_txo_data(tex, txo_tex);
-
-            continue;
+        // Compare the timestamp of the output filename to the original filename.
+        // If the output filename doesn't exist or is newer than the original
+        // filename, we don't have to actually do anything.
+        if (fullpath.compare_timestamps(orig_fullpath) > 0) {
+          // The output filename is newer than the original, so we don't have to
+          // write a txo.  Just remap the texture to the txo version.
+          tex->set_fullpath(fullpath);
+          tex->set_loaded_from_txo();
+          tex->clear_alpha_filename();
+          tex->clear_alpha_fullpath();
+          Filename filename = tex->get_filename().get_filename_index(0);
+          if (_tex_txopz) {
+            filename.set_extension("txo.pz");
+            filename = Filename(filename.get_fullpath());
+          } else {
+            filename.set_extension("txo");
           }
+          tex->set_filename(filename);
+          continue;
         }
       }
 
+      // We need to either write a txo version of this texture or embed it
+      // into the bam file.  We need the raw image data.
+
+      // Reload the raw image data of the texture.
+      tex->clear_ram_image();
       tex->get_ram_image();
+
       bool want_mipmaps = (_tex_mipmap || tex->uses_mipmaps());
       if (want_mipmaps) {
         // Generate mipmap levels.
@@ -379,50 +456,11 @@ run() {
 #endif  // HAVE_SQUISH
       }
 
-      if ((_tex_txo || _tex_txopz) && !tex->get_loaded_from_txo()) {
-        TxoTexture txo_tex;
-        txo_tex._txo_filename = tex->get_fullpath().get_filename_index(0);
-        txo_tex._txo_filename.set_extension(_tex_txopz ? "txo.pz" : "txo");
-        if (_tex_txopz) {
-          // We use this clumsy syntax so that the new extension appears to be two
-          // separate extensions, .txo followed by .pz, which is what
-          // Texture::write() expects to find.
-          txo_tex._txo_filename = Filename(txo_tex._txo_filename.get_fullpath());
-        }
-        txo_tex._img_filename = tex->get_fullpath().get_filename_index(0);
-        txo_tex._img_timestamp = txo_tex._img_filename.get_timestamp();
-        txo_tex._alpha_img_filename = tex->get_alpha_fullpath().get_filename_index(0);
-        txo_tex._alpha_img_timestamp = txo_tex._alpha_img_filename.get_timestamp();
-        _txo_textures[txo_tex._txo_filename] = txo_tex;
-
-        cache_modified = true;
-
-        convert_txo(tex, txo_tex);
+      if (_tex_txo || _tex_txopz) {
+        convert_txo(tex);
       }
     }
-
-    if ((_tex_txo || _tex_txopz) && _got_txo_cache && cache_modified) {
-      std::cerr << "Writing txo cache " << _txo_cache.get_fullpath() << "\n";
-      _txo_cache.set_binary();
-
-      Datagram dg;
-      dg.add_uint32(_txo_textures.size());
-
-      for (TxoTextures::const_iterator it = _txo_textures.begin();
-           it != _txo_textures.end(); ++it) {
-        const TxoTexture &tex = (*it).second;
-        dg.add_string(tex._txo_filename.get_fullpath());
-        dg.add_string(tex._img_filename.get_fullpath());
-        dg.add_uint64(tex._img_timestamp);
-        dg.add_string(tex._alpha_img_filename.get_fullpath());
-        dg.add_uint64(tex._alpha_img_timestamp);
-      }
-
-      if (!vfs->write_file(_txo_cache, (const unsigned char *)dg.get_data(),
-                           dg.get_length(), false)) {
-        std::cerr << "Couldn't write txo cache\n";
-      }
-    }
+    textures_header_only = true;
   }
 
   if (_ls) {
@@ -470,41 +508,67 @@ handle_args(ProgramBase::Args &args) {
     _path_replace->_path_store = PS_absolute;
   }
 
+  bam_material_mode = BamFile::BTM_unchanged;
+
   return EggToSomething::handle_args(args);
 }
 
 /**
- * Recursively walks the scene graph, looking for Texture references.
+ * Recursively walks the scene graph, looking for RenderStates that have
+ * filenames.
  */
 void EggToBam::
-collect_textures(PandaNode *node) {
-  collect_textures(node->get_state());
+collect_materials(PandaNode *node) {
+  const RenderState *state = node->get_state();
+
+  const MaterialAttrib *mattr;
+  state->get_attrib_def(mattr);
+  Material *mat = mattr->get_material();
+  if (!mattr->is_off() && mat != nullptr && !mat->get_filename().empty()) {
+    _materials.insert(mat);
+  }
+
+  const TextureAttrib *ta;
+  state->get_attrib_def(ta);
+  for (size_t i = 0; i < ta->get_num_on_stages(); i++) {
+    Texture *tex = ta->get_on_texture(ta->get_on_stage(i));
+    _textures.insert(tex);
+  }
+
   if (node->is_geom_node()) {
     GeomNode *geom_node = DCAST(GeomNode, node);
     int num_geoms = geom_node->get_num_geoms();
     for (int i = 0; i < num_geoms; ++i) {
-      collect_textures(geom_node->get_geom_state(i));
+      state = geom_node->get_geom_state(i);
+
+      state->get_attrib_def(mattr);
+      mat = mattr->get_material();
+      if (!mattr->is_off() && mat != nullptr && !mat->get_filename().empty()) {
+        _materials.insert(mat);
+      }
+
+      state->get_attrib_def(ta);
+      for (size_t i = 0; i < ta->get_num_on_stages(); i++) {
+        Texture *tex = ta->get_on_texture(ta->get_on_stage(i));
+        _textures.insert(tex);
+      }
+    }
+  } else if (node->is_of_type(ModelRoot::get_class_type())) {
+    // ModelRoots can contain material groups, so we need to remap those as
+    // well.
+    ModelRoot *model_root = DCAST(ModelRoot, node);
+    for (size_t i = 0; i < model_root->get_num_material_groups(); i++) {
+      const MaterialCollection &group = model_root->get_material_group(i);
+      for (int j = 0; j < group.get_num_materials(); j++) {
+        _materials.insert(group.get_material(j));
+      }
     }
   }
 
   PandaNode::Children children = node->get_children();
   int num_children = children.get_num_children();
   for (int i = 0; i < num_children; ++i) {
-    collect_textures(children.get_child(i));
-  }
-}
-
-/**
- * Recursively walks the scene graph, looking for Texture references.
- */
-void EggToBam::
-collect_textures(const RenderState *state) {
-  const TextureAttrib *tex_attrib = DCAST(TextureAttrib, state->get_attrib(TextureAttrib::get_class_type()));
-  if (tex_attrib != nullptr) {
-    int num_on_stages = tex_attrib->get_num_on_stages();
-    for (int i = 0; i < num_on_stages; ++i) {
-      _textures.insert(tex_attrib->get_on_texture(tex_attrib->get_on_stage(i)));
-    }
+    collect_materials(children.get_child(i));
   }
 }
 
@@ -513,85 +577,42 @@ collect_textures(const RenderState *state) {
  * to a txo file and updates the Texture object to reference the new file.
  */
 void EggToBam::
-convert_txo(Texture *tex, const TxoTexture &txo_tex) {
-  if (tex->write(txo_tex._txo_filename)) {
-    nout << "  Writing " << txo_tex._txo_filename;
-    if (tex->get_ram_image_compression() != Texture::CM_off) {
-      nout << " (compressed " << tex->get_ram_image_compression() << ")";
+convert_txo(Texture *tex) {
+  if (!tex->get_loaded_from_txo()) {
+    Filename fullpath = tex->get_fullpath().get_filename_index(0);
+    if (_tex_txopz) {
+      fullpath.set_extension("txo.pz");
+      // We use this clumsy syntax so that the new extension appears to be two
+      // separate extensions, .txo followed by .pz, which is what
+      // Texture::write() expects to find.
+      fullpath = Filename(fullpath.get_fullpath());
+    } else {
+      fullpath.set_extension("txo");
     }
-    nout << "\n";
-    set_txo_data(tex, txo_tex);
+
+    if (tex->write(fullpath)) {
+      nout << "  Wrote " << fullpath;
+      if (tex->get_ram_image_compression() != Texture::CM_off) {
+        nout << " (compressed " << tex->get_ram_image_compression() << ")";
+      }
+      nout << "\n";
+      tex->set_loaded_from_txo();
+      tex->set_fullpath(fullpath);
+      tex->clear_alpha_fullpath();
+
+      Filename filename = tex->get_filename().get_filename_index(0);
+      if (_tex_txopz) {
+        filename.set_extension("txo.pz");
+        filename = Filename(filename.get_fullpath());
+      } else {
+        filename.set_extension("txo");
+      }
+
+      tex->set_filename(filename);
+      tex->clear_alpha_filename();
+    }
   }
 }
-
-/**
- * Changes the indicated Texture to reference the .txo file.
- */
-void EggToBam::
-set_txo_data(Texture *tex, const TxoTexture &txo_tex) {
-  tex->set_loaded_from_txo();
-  tex->set_fullpath(txo_tex._txo_filename);
-  tex->clear_alpha_fullpath();
-
-  Filename filename = tex->get_filename().get_filename_index(0);
-  if (_tex_txopz) {
-    filename.set_extension("txo.pz");
-    filename = Filename(filename.get_fullpath());
-  } else {
-    filename.set_extension("txo");
-  }
-
-  tex->set_filename(filename);
-  tex->clear_alpha_filename();
-}
-
-/**
- * Creates a GraphicsBuffer for communicating with the graphics card.
- */
-bool EggToBam::
-make_buffer() {
-  if (!_load_display.empty()) {
-    // Override the user's config file with the command-line parameter.
-    std::string prc = "load-display " + _load_display;
-    load_prc_file_data("prc", prc);
-  }
-
-  GraphicsPipeSelection *selection = GraphicsPipeSelection::get_global_ptr();
-  _pipe = selection->make_default_pipe();
-  if (_pipe == nullptr) {
-    nout << "Unable to create graphics pipe.\n";
-    return false;
-  }
-
-  _engine = new GraphicsEngine;
-
-  FrameBufferProperties fbprops = FrameBufferProperties::get_default();
-
-  // Some graphics drivers can only create single-buffered offscreen buffers.
-  // So request that.
-  fbprops.set_back_buffers(0);
-
-  WindowProperties winprops;
-  winprops.set_size(1, 1);
-  winprops.set_origin(0, 0);
-  winprops.set_undecorated(true);
-  winprops.set_open(true);
-  winprops.set_z_order(WindowProperties::Z_bottom);
-
-  // We don't care how big the buffer is; we just need it to manifest the GSG.
-  _buffer = _engine->make_output(_pipe, "buffer", 0,
-                                 fbprops, winprops,
-                                 GraphicsPipe::BF_fb_props_optional);
-  _engine->open_windows();
-  if (_buffer == nullptr || !_buffer->is_valid()) {
-    nout << "Unable to create graphics window.\n";
-    return false;
-  }
-  _gsg = _buffer->get_gsg();
-
-  return true;
-}
-
 
 int main(int argc, char *argv[]) {
   EggToBam prog;

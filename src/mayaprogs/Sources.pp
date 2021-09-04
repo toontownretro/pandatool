@@ -215,7 +215,7 @@
     mathutil:c linmath:c putil:c panda:m \
     express:c pandaexpress:m \
     dtool:m \
-    event:c gobj:c chan:c pgraph:c parametrics:c char:c prc dtoolutil:c \
+    event:c gobj:c pgraph:c parametrics:c anim:c prc dtoolutil:c \
     interrogatedb dtoolbase:c collide:c pnmimage:c dgraph:c tform:c \
     pipeline:c pstatclient:c grutil:c gsgbase:c net:c display:c \
     cull:c text:c nativenet:c movies:c audio:c \

@@ -153,10 +153,10 @@ EggOptchar() {
      &EggOptchar::dispatch_vector_string_pair, nullptr, &_reparent_joints);
 
   add_option
-    ("new", "joint,source", 0,
-     "Creates a new joint under the named parent joint.  The new "
-     "joint will inherit the same net transform as its parent.",
-     &EggOptchar::dispatch_vector_string_pair, nullptr, &_new_joints);
+    ("new", "joint,source,[,xyz],[,hpr],[,ijk]", 0,
+     "Creates a new joint under the named parent joint with an optional pose.  "
+     "The new joint will inherit the same net transform as its parent.",
+     &EggOptchar::dispatch_new_joint, nullptr, &_new_joints);
 
   add_option
     ("rename", "joint,newjoint", 0,
@@ -502,6 +502,74 @@ dispatch_flag_groups(const string &opt, const string &arg, void *var) {
 }
 
 /**
+ * Accepts an entry for creating a new joint.  Expects a comma delimited
+ * expression containing the joint name, parent joint name, and optional
+ * translation, rotation, and scale.
+ */
+bool EggOptchar::
+dispatch_new_joint(const string &opt, const string &args, void *var) {
+  NewJoints *njs = (NewJoints *)var;
+
+  vector_string words;
+  tokenize(args, words, ",");
+
+  if (words.size() < (size_t)2) {
+    nout << "-" << opt
+         << " requires at least a joint name and parent joint name, separated "
+         << " by a comma.\n";
+    return false;
+  }
+
+  NewJoint nj;
+  nj._scale.set(1, 1, 1);
+  nj._name = words[0];
+  nj._parent = words[1];
+
+  if (words.size() > (size_t)2) {
+    // Got at least a position.
+    if (words.size() < (size_t)5) {
+      nout << "-" << opt
+           << " requires 3 components for translation, separated by a comma.\n";
+      return false;
+    }
+
+    string_to_double(words[2], nj._pos[0]);
+    string_to_double(words[3], nj._pos[1]);
+    string_to_double(words[4], nj._pos[2]);
+
+    if (words.size() > (size_t)5) {
+      // Got a rotation.
+      if (words.size() < (size_t)8) {
+        nout << "-" << opt
+            << " requires 3 components for rotation, separated by a comma.\n";
+        return false;
+      }
+
+      string_to_double(words[5], nj._hpr[0]);
+      string_to_double(words[6], nj._hpr[1]);
+      string_to_double(words[7], nj._hpr[2]);
+
+      if (words.size() > (size_t)8) {
+        // Got a rotation.
+        if (words.size() < (size_t)11) {
+          nout << "-" << opt
+              << " requires 3 components for scale, separated by a comma.\n";
+          return false;
+        }
+
+        string_to_double(words[8], nj._scale[0]);
+        string_to_double(words[9], nj._scale[1]);
+        string_to_double(words[10], nj._scale[2]);
+      }
+    }
+  }
+
+  njs->push_back(nj);
+
+  return true;
+}
+
+/**
  * Flag all joints and sliders that should be removed for optimization
  * purposes.
  */
@@ -786,35 +854,39 @@ apply_user_reparents() {
   int num_characters = _collection->get_num_characters();
 
   // First, get the new joints.
-  StringPairs::const_iterator spi;
-  for (spi = _new_joints.begin(); spi != _new_joints.end(); ++spi) {
-    const StringPair &p = (*spi);
+  NewJoints::const_iterator nji;
+  for (nji = _new_joints.begin(); nji != _new_joints.end(); ++nji) {
+    const NewJoint &p = (*nji);
 
     for (int ci = 0; ci < num_characters; ci++) {
       EggCharacterData *char_data = _collection->get_character(ci);
-      EggJointData *node_a = char_data->find_joint(p._a);
+      EggJointData *node_a = char_data->find_joint(p._name);
       EggJointData *node_b = char_data->get_root_joint();
-      if (!p._b.empty()) {
-        node_b = char_data->find_joint(p._b);
+      if (!p._parent.empty()) {
+        node_b = char_data->find_joint(p._parent);
       }
 
       if (node_b == nullptr) {
-        nout << "No joint named " << p._b << " in " << char_data->get_name()
+        nout << "No joint named " << p._parent << " in " << char_data->get_name()
              << ".\n";
 
       } else if (node_a != nullptr) {
-        nout << "Joint " << p._a << " already exists in "
+        nout << "Joint " << p._name << " already exists in "
              << char_data->get_name() << ".\n";
 
       } else {
-        nout << "Creating new joint " << p._a << " in "
+        nout << "Creating new joint " << p._name << " in "
              << char_data->get_name() << ".\n";
-        node_a = char_data->make_new_joint(p._a, node_b);
+        LMatrix4d mat;
+        compose_matrix(mat, p._scale, p._hpr, p._pos);
+        node_a = char_data->make_new_joint(p._name, node_b);
+        node_a->apply_default_pose(mat);
         did_anything = true;
       }
     }
   }
 
+  StringPairs::const_iterator spi;
   // Now get the user reparents.
   for (spi = _reparent_joints.begin(); spi != _reparent_joints.end(); ++spi) {
     const StringPair &p = (*spi);

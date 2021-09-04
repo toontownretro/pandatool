@@ -6,6 +6,7 @@ pp.dep
 Opt?-*
 *.sln
 *.vcxproj
+*.vcxproj.filters
 *.vcxproj.user
 .vs
 *.log
@@ -18,3 +19,5 @@ src/vrml/vrmlParser.h
 src/xfile/xLexer.cxx
 src/xfile/xParser.cxx
 src/xfile/xParser.h
+*.pyc
+__pycache__

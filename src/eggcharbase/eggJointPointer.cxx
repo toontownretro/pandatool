@@ -87,3 +87,10 @@ quantize_channels(const std::string &, double) {
 void EggJointPointer::
 apply_default_pose(EggJointPointer *source_joint, int frame) {
 }
+
+/**
+ * Applies the indicated transform as the initial pose of this joint.
+ */
+void EggJointPointer::
+apply_default_pose(const LMatrix4d &mat) {
+}

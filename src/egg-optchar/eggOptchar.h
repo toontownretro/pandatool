@@ -48,6 +48,7 @@ private:
   static bool dispatch_name_components(const std::string &opt, const std::string &arg, void *var);
   static bool dispatch_double_components(const std::string &opt, const std::string &arg, void *var);
   static bool dispatch_flag_groups(const std::string &opt, const std::string &arg, void *var);
+  static bool dispatch_new_joint(const std::string &opt, const std::string &arg, void *var);
 
   void determine_removed_components();
   void move_vertices();
@@ -89,8 +90,17 @@ private:
     std::string _a;
     std::string _b;
   };
+  class NewJoint {
+  public:
+    std::string _name;
+    std::string _parent;
+    LPoint3d _pos;
+    LPoint3d _hpr;
+    LPoint3d _scale;
+  };
   typedef pvector<StringPair> StringPairs;
-  StringPairs _new_joints;
+  typedef pvector<NewJoint> NewJoints;
+  NewJoints _new_joints;
   StringPairs _reparent_joints;
   StringPairs _zero_channels;
   StringPairs _rename_joints;

@@ -175,6 +175,17 @@ apply_default_pose(EggJointPointer *source_joint, int frame) {
 }
 
 /**
+ * Applies the indicated transform as the initial pose of this joint.
+ */
+void EggJointNodePointer::
+apply_default_pose(const LMatrix4d &mat) {
+  if (_joint != nullptr) {
+    _joint->clear_default_pose();
+    _joint->modify_default_pose().add_matrix4(mat);
+  }
+}
+
+/**
  * Returns true if there are any vertices referenced by the node this points
  * to, false otherwise.  For certain kinds of back pointers (e.g.  table
  * animation entries), this is always false.
@@ -206,4 +217,12 @@ make_new_joint(const std::string &name) {
 void EggJointNodePointer::
 set_name(const std::string &name) {
   _joint->set_name(name);
+}
+
+/**
+ * Returns the physical EggGroup of the joint.
+ */
+EggGroup *EggJointNodePointer::
+get_joint() const {
+  return _joint;
 }

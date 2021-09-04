@@ -1,7 +1,7 @@
 #define OTHER_LIBS \
    pipeline:c panda:m \
-   parametrics:c collide:c chan:c \
-   char:c gsgbase:c gobj:c pgraphnodes:c \
+   parametrics:c collide:c anim:c \
+   gsgbase:c gobj:c pgraphnodes:c \
    tform:c dgraph:c text:c movies:c \
    audio:c cull:c device:c \
    pnmtext:c \

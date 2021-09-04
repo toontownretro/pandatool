@@ -38,7 +38,7 @@
 #if $[PANDATOOL_INSTALL]
   #define PANDATOOL_INSTALL $[unixfilename $[PANDATOOL_INSTALL]]
 #elif $[CTPROJS]
-  #set PANDATOOL $[unixfilename $[PANDATOOL]]
+  #define PANDATOOL $[unixfilename $[PANDATOOL]]
   #define PANDATOOL_INSTALL $[PANDATOOL]/built
   #if $[eq $[PANDATOOL],]
     #error You seem to be attached to some trees, but not PANDATOOL!

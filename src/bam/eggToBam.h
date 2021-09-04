@@ -21,7 +21,7 @@
 #include "graphicsPipe.h"
 
 class PandaNode;
-class RenderState;
+class Material;
 class Texture;
 class GraphicsEngine;
 class GraphicsStateGuardian;
@@ -40,31 +40,21 @@ protected:
   virtual bool handle_args(Args &args);
 
 private:
-  class TxoTexture {
-  public:
-    TxoTexture();
+  void collect_materials(PandaNode *node);
 
-    Filename _txo_filename;
-
-    Filename _img_filename;
-    time_t _img_timestamp;
-    Filename _alpha_img_filename;
-    time_t _alpha_img_timestamp;
-  };
-
-  void collect_textures(PandaNode *node);
-  void collect_textures(const RenderState *state);
-  void convert_txo(Texture *tex, const TxoTexture &txo_tex);
-  void set_txo_data(Texture *tex, const TxoTexture &txo_tex);
-
+  void convert_txo(Texture *tex);
   bool make_buffer();
 
 private:
+  // This is the set of all materials referenced by the egg file that need to
+  // remapped to their installed counterpart.
+  typedef pset<Material *> Materials;
+  Materials _materials;
+
+  // We might also have textures applied directly onto the RenderState, and we
+  // also need to remap those.
   typedef pset<Texture *> Textures;
   Textures _textures;
-
-  typedef pmap<Filename, TxoTexture> TxoTextures;
-  TxoTextures _txo_textures;
 
   bool _has_egg_flatten;
   int _egg_flatten;
@@ -75,6 +65,9 @@ private:
   bool _has_compression_quality;
   int _compression_quality;
   bool _compression_off;
+  bool _got_index_filename;
+  Filename _index_filename;
+
   bool _tex_rawdata;
   bool _tex_txo;
   bool _tex_txopz;
@@ -82,8 +75,6 @@ private:
   bool _tex_mipmap;
   std::string _ctex_quality;
   std::string _load_display;
-  Filename _txo_cache;
-  bool _got_txo_cache;
 
   // The rest of this is required to support -ctex.
   PT(GraphicsPipe) _pipe;
