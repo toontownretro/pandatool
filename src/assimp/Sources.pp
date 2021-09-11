@@ -1,3 +1,5 @@
+#define BUILD_DIRECTORY
+
 #begin lib_target
   #define BUILD_TARGET $[HAVE_ASSIMP]
 
