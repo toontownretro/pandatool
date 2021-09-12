@@ -7,7 +7,7 @@
   pgraphnodes:c gobj:c putil:c \
   mathutil:c linmath:c event:c pstatclient:c \
   gsgbase:c grutil:c text:c cull:c \
-  tform:c device:c movies:c material:c \
+  tform:c device:c movies:c material:c pdx:c \
   $[if $[HAVE_FREETYPE],pnmtext:c] \
   $[if $[HAVE_NET],net:c] $[if $[WANT_NATIVE_NET],nativenet:c] \
   $[if $[HAVE_AUDIO],audio:c] \
