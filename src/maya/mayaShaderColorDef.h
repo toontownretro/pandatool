@@ -26,6 +26,10 @@ class MayaShaderColorDef;
 typedef pvector<MayaShaderColorDef *> MayaShaderColorList;
 typedef pmap<std::string, std::string> MayaFileToUVSetMap;
 
+#include "pre_maya_include.h"
+#include <maya/MObject.h>
+#include "post_maya_include.h"
+
 /**
  * This defines the various attributes that Maya may associate with the
  * "color" channel for a particular shader (as well as on the "transparency"

@@ -22,6 +22,10 @@
 
 class MayaShader;
 
+#include "pre_maya_include.h"
+#include <maya/MObject.h>
+#include "post_maya_include.h"
+
 /**
  * Collects the set of MayaShaders that have been encountered so far.
  */
