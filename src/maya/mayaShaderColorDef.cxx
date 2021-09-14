@@ -234,7 +234,7 @@ reset_maya_texture(const Filename &texture) {
  */
 string MayaShaderColorDef::
 get_panda_uvset_name() {
-  if (_uvset_name == "map1") {
+  if (_uvset_name == "map1" || _uvset_name == "uvSet1") {
     return "default";
   }
   return _uvset_name;
@@ -531,9 +531,9 @@ find_textures_modern(const string &shadername, MayaShaderColorList &list, MPlug 
 
     get_vec2_attribute(sourceFn,  "cu",  "cv",         def->_coverage);
     get_vec2_attribute(sourceFn,  "tfu", "tfv",        def->_translate_frame);
-    
+
     get_angle_attribute(sourceFn, "rf",        def->_rotate_frame);
-    
+
     get_bool_attribute(sourceFn, "mu",            def->_mirror_u);
     get_bool_attribute(sourceFn, "mv",            def->_mirror_v);
     get_bool_attribute(sourceFn, "s",             def->_stagger);
@@ -542,7 +542,7 @@ find_textures_modern(const string &shadername, MayaShaderColorList &list, MPlug 
 
     get_vec2_attribute(sourceFn,  "reu", "rev",        def->_repeat_uv);
     get_vec2_attribute(sourceFn,  "ofu", "ofv",        def->_offset);
-    
+
     get_angle_attribute(sourceFn, "rotateUV",         def->_rotate_uv);
 
     LRGBColor color_gain;
