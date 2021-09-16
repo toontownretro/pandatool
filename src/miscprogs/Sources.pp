@@ -26,3 +26,13 @@
   #define SOURCES \
     modelIndexToBoo.cxx modelIndexToBoo.h
 #end bin_target
+
+#begin bin_target
+  #define TARGET asset-list-depends
+  #define OTHER_LIBS \
+    $[OTHER_LIBS] egg2pg:c gobj:c
+
+  #define SOURCES \
+    assetListDepends.cxx assetListDepends.h
+
+#end bin_target
