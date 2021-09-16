@@ -76,80 +76,18 @@ run() {
     return false;
   }
 
+  // Append the dirname of the loaded ptex file to the search path.
+  path.append_directory(fullpath.get_dirname());
+
   PTexture ptex;
+  ptex.local_object();
   if (!ptex.load(elem, path)) {
     std::cerr << "Failed to read file into ptex structure\n";
     return false;
   }
 
-  bool needs_rewrite = true;
-
-  // Only rewrite if necessary.
-  Filename ptex_filename = fullpath;
-  if (_output_filename.compare_timestamps(ptex_filename) > 0) {
-    // Up-to-date with the .ptex, check the images.
-    Texture::TextureType type = ptex.get_texture_type();
-    if (type == Texture::TT_1d_texture ||
-        type == Texture::TT_2d_texture) {
-      // Single-faced texture, check the image file and (if we have one) the
-      // alpha file.
-
-      if (_output_filename.compare_timestamps(ptex.get_image_fullpath()) > 0) {
-        if (!ptex.has_alpha_image_filename()) {
-          // Everything up-to-date.
-          needs_rewrite = false;
-        } else if (_output_filename.compare_timestamps(ptex.get_alpha_image_fullpath()) > 0) {
-          // Everything up-to-date.
-          needs_rewrite = false;
-        }
-      }
-    } else {
-      // This is a texture that has multiple slices.  We need to compare the
-      // timestamps of each slice image file to the output.
-
-      Filename pattern = ptex.get_image_filename();
-      pattern.set_pattern(true);
-
-      Filename alpha_pattern = ptex.get_alpha_image_filename();
-      alpha_pattern.set_pattern(true);
-      bool has_alpha = ptex.has_alpha_image_filename();
-
-      path.append_directory(ptex_filename.get_dirname());
-
-      bool all_ok = true;
-      for (int i = 0; i < ptex.get_num_pages(); i++) {
-        Filename page_filename = pattern.get_filename_index(i);
-        if (page_filename.resolve_filename(path)) {
-          if (_output_filename.compare_timestamps(page_filename) <= 0) {
-            // This one is out of date.
-            all_ok = false;
-            break;
-          }
-        }
-
-        if (has_alpha) {
-          Filename page_alpha_filename = alpha_pattern.get_filename_index(i);
-          if (page_alpha_filename.resolve_filename(path)) {
-            if (_output_filename.compare_timestamps(page_alpha_filename) <= 0) {
-              // This one is out of date.
-              all_ok = false;
-              break;
-            }
-          }
-        }
-      }
-
-      needs_rewrite = !all_ok;
-    }
-  }
-
-  if (!needs_rewrite) {
-    nout << "Output texture is up-to-date.\n";
-    return true;
-  }
-
   PT(Texture) tex = new Texture(_input_filename.get_basename_wo_extension());
-  if (!tex->read_ptex(elem)) {
+  if (!tex->read_ptex(elem, fullpath)) {
     std::cerr << "Could not read the input texture into the texture object!\n";
     return false;
   }

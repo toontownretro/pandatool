@@ -71,18 +71,6 @@ run() {
   DSearchPath path = get_model_path();
   path.append_directory(".");
 
-  Filename fullpath = _input_filename;
-  if (!fullpath.resolve_filename(path)) {
-    std::cerr << "Couldn't locate the input material!\n";
-    return false;
-  }
-
-  if (_output_filename.compare_timestamps(fullpath) > 0) {
-    // Up to date.
-    nout << "Output material is up-to-date.\n";
-    return true;
-  }
-
   PT(Material) pmat = MaterialPool::load_material(_input_filename, path);
   if (pmat == nullptr) {
     std::cerr << "Couldn't load input material!\n";
