@@ -82,4 +82,11 @@
     pmatToMto.cxx pmatToMto.h
 #end bin_target
 
+#begin bin_target
+  #define TARGET pmdl2bam
+  #define LOCAL_LIBS progbase
+  #define SOURCES \
+    pmdlToBam.cxx pmdlToBam.h
+#end bin_target
+
 #endif // HAVE_EGG
