@@ -151,7 +151,7 @@
     linmath:c putil:c panda:m \
     express:c pandaexpress:m \
     interrogatedb dtoolutil:c dtoolbase:c prc  dtool:m \
-    pipeline:c
+    pipeline:c egg2pg:c
 
   #define BUILDING_DLL BUILDING_MISC
 
