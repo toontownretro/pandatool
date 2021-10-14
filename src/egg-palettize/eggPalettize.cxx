@@ -16,6 +16,7 @@
 #include "eggFile.h"
 #include "pal_string_utils.h"
 #include "filenameUnifier.h"
+#include "config_palettizer.h"
 
 #include "dcast.h"
 #include "eggData.h"
@@ -871,6 +872,8 @@ run() {
 
 int
 main(int argc, char *argv[]) {
+  init_libpalettizer();
+
   EggPalettize prog;
   prog.parse_command_line(argc, argv);
   prog.run();

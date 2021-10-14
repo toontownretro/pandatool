@@ -12,6 +12,8 @@
  */
 
 #include "config_palettizer.h"
+#include "config_pnmimage.h"
+#include "config_pnmimagetypes.h"
 #include "palettizer.h"
 #include "eggFile.h"
 #include "paletteGroup.h"
@@ -32,7 +34,7 @@
 Configure(config_palettizer);
 
 ConfigureFn(config_palettizer) {
-  init_palettizer();
+  init_libpalettizer();
 }
 
 /**
@@ -42,12 +44,15 @@ ConfigureFn(config_palettizer) {
  * special cases exist.
  */
 void
-init_palettizer() {
+init_libpalettizer() {
   static bool initialized = false;
   if (initialized) {
     return;
   }
   initialized = true;
+
+  init_libpnmimage();
+  init_libpnmimagetypes();
 
   Palettizer::init_type();
   EggFile::init_type();

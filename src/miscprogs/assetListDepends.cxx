@@ -15,6 +15,8 @@
 #include "assetRegistry.h"
 #include "assetBase.h"
 #include "executionEnvironment.h"
+#include "config_gobj.h"
+#include "config_egg2pg.h"
 
 /**
  *
@@ -75,6 +77,9 @@ handle_args(Args &args) {
 
 int
 main(int argc, char *argv[]) {
+  init_libgobj();
+  init_libegg2pg();
+
   AssetListDepends prog;
   prog.parse_command_line(argc, argv);
   prog.run();

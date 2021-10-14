@@ -16,6 +16,6 @@
 
 #include "pandatoolbase.h"
 
-void init_palettizer();
+void init_libpalettizer();
 
 #endif /* __CONFIG_UTIL_H__ */
