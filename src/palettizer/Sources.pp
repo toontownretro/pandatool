@@ -3,6 +3,8 @@
   #define LOCAL_LIBS \
     pandatoolbase
 
+  #define USE_PACKAGES png
+
   #define OTHER_LIBS \
     egg:c pandaegg:m \
     pipeline:c event:c pstatclient:c panda:m \
