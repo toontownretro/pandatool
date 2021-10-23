@@ -5,7 +5,7 @@
   #define OTHER_LIBS \
     pipeline:c event:c putil:c mathutil:c linmath:c \
     panda:m \
-    pandabase:c express:c pandaexpress:m \
+     express:c pandaexpress:m \
     dtoolutil:c prc interrogatedb dtoolbase:c dtool:m
 
   #define SOURCES \

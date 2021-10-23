@@ -8,7 +8,7 @@
   #define LOCAL_LIBS pandatoolbase
   #define OTHER_LIBS \
     event:c putil:c pipeline:c mathutil:c linmath:c panda:m \
-    pandabase:c express:c pandaexpress:m \
+     express:c pandaexpress:m \
     interrogatedb prc  \
     dtoolutil:c dtoolbase:c dtool:m
 

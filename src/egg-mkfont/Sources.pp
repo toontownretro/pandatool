@@ -9,7 +9,7 @@
     egg:c pandaegg:m \
     pipeline:c event:c pstatclient:c panda:m \
     parametrics:c gsgbase:c gobj:c \
-    pandabase:c pnmimage:c pnmimagetypes:c pnmtext:c \
+     pnmimage:c pnmimagetypes:c pnmtext:c \
     mathutil:c linmath:c putil:c express:c \
     pandaexpress:m \
     interrogatedb prc  \

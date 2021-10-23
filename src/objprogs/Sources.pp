@@ -3,7 +3,7 @@
 #define OTHER_LIBS \
     egg:c egg2pg:c pandaegg:m \
     pipeline:c event:c pstatclient:c panda:m \
-    pandabase:c pnmimage:c mathutil:c linmath:c putil:c express:c \
+     pnmimage:c mathutil:c linmath:c putil:c express:c \
     grutil:c text:c movies:c audio:c cull:c device:c \
     pnmtext:c \
     pandaexpress:m \

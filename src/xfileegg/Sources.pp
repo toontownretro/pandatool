@@ -6,7 +6,7 @@
     mathutil:c linmath:c putil:c pipeline:c event:c \
     pnmimage:c \
     panda:m \
-    pandabase:c express:c pandaexpress:m \
+     express:c pandaexpress:m \
     interrogatedb prc  \
     dtoolutil:c dtoolbase:c dtool:m
 

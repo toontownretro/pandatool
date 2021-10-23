@@ -7,7 +7,7 @@
   #define OTHER_LIBS \
     mathutil:c linmath:c pipeline:c \
     panda:m \
-    pandabase:c express:c pandaexpress:m \
+     express:c pandaexpress:m \
     interrogatedb dtoolutil:c dtoolbase:c prc  dtool:m
 
   #define USE_PACKAGES zlib

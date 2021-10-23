@@ -5,7 +5,7 @@
   linmath:c pnmimagetypes:c pnmimage:c event:c \
   putil:c mathutil:c pipeline:c pstatclient:c downloader:c net:c nativenet:c \
   panda:m \
-  pandabase:c express:c pandaexpress:m \
+   express:c pandaexpress:m \
   interrogatedb dtoolutil:c dtoolbase:c prc  dtool:m
 
 #begin bin_target

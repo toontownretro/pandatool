@@ -1,7 +1,7 @@
 #define OTHER_LIBS \
     egg:c pandaegg:m \
     pipeline:c event:c display:c gobj:c pgraph:c pstatclient:c grutil:c panda:m \
-    pandabase:c pnmimage:c pnmimagetypes:c mathutil:c linmath:c putil:c express:c \
+     pnmimage:c pnmimagetypes:c mathutil:c linmath:c putil:c express:c \
     pandaexpress:m \
     interrogatedb prc  \
     dtoolutil:c dtoolbase:c dtool:m \

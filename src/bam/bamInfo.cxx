@@ -24,6 +24,10 @@
 #include "pvector.h"
 #include "bamCacheRecord.h"
 #include "bamCacheIndex.h"
+#include "config_palettizer.h"
+#include "config_pgraph.h"
+#include "config_pgraphnodes.h"
+#include "config_anim.h"
 
 /**
  *
@@ -321,6 +325,11 @@ list_hierarchy(PandaNode *node, int indent_level) {
 }
 
 int main(int argc, char *argv[]) {
+  init_libpalettizer();
+  init_libpgraph();
+  init_libpgraphnodes();
+  init_libanim();
+
   BamInfo prog;
   prog.parse_command_line(argc, argv);
   prog.run();

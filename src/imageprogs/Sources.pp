@@ -4,7 +4,7 @@
 #define OTHER_LIBS \
     pipeline:c event:c pstatclient:c grutil:c \
     panda:m \
-    pandabase:c pnmimage:c pnmimagetypes:c \
+     pnmimage:c pnmimagetypes:c \
     mathutil:c linmath:c putil:c express:c \
     pandaexpress:m \
     interrogatedb prc  \

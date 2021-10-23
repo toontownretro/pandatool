@@ -5,7 +5,7 @@
    tform:c dgraph:c text:c movies:c \
    audio:c cull:c device:c \
    pnmtext:c \
-   express:c putil:c pandabase:c pandaexpress:m \
+   express:c putil:c  pandaexpress:m \
    interrogatedb prc  \
    dtoolutil:c dtoolbase:c dtool:m
 

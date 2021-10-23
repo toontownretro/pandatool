@@ -7,7 +7,7 @@
     event:c linmath:c mathutil:c pnmimage:c putil:c \
     pipeline:c pstatclient:c downloader:c net:c nativenet:c \
     panda:m \
-    pandabase:c express:c pandaexpress:m \
+     express:c pandaexpress:m \
     interrogatedb prc \
     dtoolutil:c dtoolbase:c dtool:m
   #define USE_PACKAGES zlib

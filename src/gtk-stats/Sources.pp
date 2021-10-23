@@ -12,7 +12,7 @@
     progbase pstatserver
   #define OTHER_LIBS \
     $[if $[HAVE_NET],net:c] $[if $[WANT_NATIVE_NET],nativenet:c] \
-    pandabase:c pnmimage:c event:c pstatclient:c \
+     pnmimage:c event:c pstatclient:c \
     linmath:c putil:c pipeline:c express:c pandaexpress:m panda:m \
     interrogatedb dtoolutil:c dtoolbase:c prc  dtool:m
 

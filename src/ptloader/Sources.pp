@@ -17,7 +17,7 @@
     $[if $[HAVE_NET],net:c] $[if $[WANT_NATIVE_NET],nativenet:c] \
     $[if $[HAVE_AUDIO],audio:c] \
     panda:m \
-    pandabase:c express:c pandaexpress:m \
+     express:c pandaexpress:m \
     interrogatedb prc  \
     dtoolutil:c dtoolbase:c dtool:m
   #define UNIX_SYS_LIBS \

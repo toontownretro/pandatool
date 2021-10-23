@@ -8,7 +8,7 @@
     pipeline:c pstatclient:c downloader:c net:c nativenet:c \
     mathutil:c linmath:c putil:c event:c express:c \
     panda:m \
-    pandabase:c pandaexpress:m \
+     pandaexpress:m \
     interrogatedb prc  \
     dtoolutil:c dtoolbase:c dtool:m
   #define UNIX_SYS_LIBS m

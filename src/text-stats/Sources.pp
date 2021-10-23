@@ -9,7 +9,7 @@
     pnmimage:c mathutil:c \
     downloader:c $[if $[HAVE_NET],net:c] $[if $[WANT_NATIVE_NET],nativenet:c] \
     panda:m \
-    pandabase:c express:c pandaexpress:m \
+     express:c pandaexpress:m \
     interrogatedb dtoolutil:c dtoolbase:c prc  dtool:m
 
   #define SOURCES \

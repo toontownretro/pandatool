@@ -5,7 +5,7 @@
   event:c pipeline:c pstatclient:c downloader:c net:c nativenet:c \
   pnmimagetypes:c pnmimage:c mathutil:c linmath:c putil:c \
   panda:m \
-  pandabase:c express:c pandaexpress:m \
+   express:c pandaexpress:m \
   interrogatedb dtoolutil:c dtoolbase:c prc  dtool:m
 #define UNIX_SYS_LIBS m
 

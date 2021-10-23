@@ -6,7 +6,7 @@
   #define LOCAL_LIBS converter pandatoolbase
   #define OTHER_LIBS \
     egg:c pandaegg:m \
-    pandabase:c express:c pandaexpress:m \
+     express:c pandaexpress:m \
     pipeline:c mathutil:c linmath:c putil:c event:c \
     panda:m \
     interrogatedb prc \

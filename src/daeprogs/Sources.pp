@@ -3,7 +3,7 @@
 #define OTHER_LIBS \
   egg:c pandaegg:m \
   pipeline:c pnmimage:c putil:c event:c mathutil:c linmath:c panda:m \
-  pandabase:c express:c pandaexpress:m \
+   express:c pandaexpress:m \
   interrogatedb dtoolutil:c dtoolbase:c prc dtool:m
 
 #begin bin_target

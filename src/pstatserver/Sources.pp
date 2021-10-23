@@ -6,7 +6,7 @@
   #define OTHER_LIBS \
     pstatclient:c downloader:c net:c putil:c pipeline:c \
     panda:m \
-    pandabase:c express:c linmath:c pandaexpress:m \
+     express:c linmath:c pandaexpress:m \
     $[if $[HAVE_NET],net:c] $[if $[WANT_NATIVE_NET],nativenet:c] \
     interrogatedb dtoolutil:c dtoolbase:c prc  dtool:m
 
