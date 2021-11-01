@@ -122,6 +122,13 @@ run() {
       for (auto it = _materials.begin(); it != _materials.end(); ++it) {
         Material *mat = *it;
 
+        if (mat == nullptr) {
+          nout << "ERROR: Collected a nullptr material.  It must've not "
+               << "been found on disk.  Check above in console for which "
+               << "material it didn't find.\n";
+          return false;
+        }
+
         auto mi = mat_assets->_assets.find(mat->get_filename().get_basename_wo_extension());
         if (mi == mat_assets->_assets.end()) {
           nout << "Material " << mat->get_filename()
