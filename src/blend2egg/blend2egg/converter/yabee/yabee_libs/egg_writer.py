@@ -652,7 +652,7 @@ class EGGMeshObjectData(EGGBaseObjectData):
         """
         for i, uv in enumerate(self.uvs_list):
             name, data = uv
-            if name == self.active_uv and name != 'ORCO': name = ''
+            if name == self.active_uv and name != 'ORCO' and name != 'lightmap': name = ''
             # Assume that a UV set named UVMap is the default unnamed UV set
             # in Panda.
             if name == 'UVMap':
