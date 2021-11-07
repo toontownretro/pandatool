@@ -19,6 +19,7 @@
 #include "eggTexture.h"
 #include "eggPolygon.h"
 #include "pnmImageHeader.h"
+#include "config_pnmimagetypes.h"
 
 #include <algorithm>
 
@@ -484,6 +485,8 @@ run() {
 
 
 int main(int argc, char *argv[]) {
+  init_libpnmimagetypes();
+
   EggTextureCards prog;
   prog.parse_command_line(argc, argv);
   prog.run();

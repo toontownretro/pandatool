@@ -14,6 +14,7 @@
 #include "eggListTextures.h"
 #include "eggTextureCollection.h"
 #include "pnmImageHeader.h"
+#include "config_pnmimagetypes.h"
 
 /**
  *
@@ -58,6 +59,8 @@ run() {
 
 
 int main(int argc, char *argv[]) {
+  init_libpnmimagetypes();
+
   EggListTextures prog;
   prog.parse_command_line(argc, argv);
   prog.run();
