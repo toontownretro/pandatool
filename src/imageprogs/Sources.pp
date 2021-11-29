@@ -12,6 +12,8 @@
     $[if $[WANT_NATIVE_NET],nativenet:c] \
     $[if $[and $[HAVE_NET],$[WANT_NATIVE_NET]],net:c downloader:c]
 
+#define USE_PACKAGES png
+
 #begin bin_target
   #define TARGET image-trans
   #define SOURCES \

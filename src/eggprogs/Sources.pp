@@ -8,6 +8,7 @@
    express:c pandaexpress:m \
   interrogatedb dtoolutil:c dtoolbase:c prc  dtool:m
 #define UNIX_SYS_LIBS m
+#define USE_PACKAGES png
 
 #begin bin_target
   #define TARGET egg-rename

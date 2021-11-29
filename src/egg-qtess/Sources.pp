@@ -18,6 +18,8 @@
     interrogatedb dtoolutil:c dtoolbase:c prc  dtool:m
   #define UNIX_SYS_LIBS m
 
+  #define USE_PACKAGES png
+
   #define SOURCES \
      config_egg_qtess.h \
      eggQtess.h \

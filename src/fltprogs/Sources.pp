@@ -8,6 +8,8 @@
    express:c pandaexpress:m \
   interrogatedb dtoolutil:c dtoolbase:c prc  dtool:m
 
+#define USE_PACKAGES png
+
 #begin bin_target
   #define TARGET fltcopy
   #define LOCAL_LIBS scmcopy flt

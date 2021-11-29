@@ -8,7 +8,7 @@
     $[if $[WANT_NATIVE_NET],nativenet:c] \
     $[if $[and $[HAVE_NET],$[WANT_NATIVE_NET]],net:c downloader:c]
 
-#define USE_PACKAGES threads
+#define USE_PACKAGES threads png
 
 #begin bin_target
   #define TARGET pfm-trans

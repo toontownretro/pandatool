@@ -1,6 +1,6 @@
 #define BUILD_DIRECTORY $[HAVE_FREETYPE]
 
-#define USE_PACKAGES freetype
+#define USE_PACKAGES freetype png
 
 #define LOCAL_LIBS \
   palettizer eggbase progbase

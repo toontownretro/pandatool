@@ -9,6 +9,8 @@
   interrogatedb dtoolutil:c dtoolbase:c prc \
    dtool:m
 
+#define USE_PACKAGES png
+
 #begin bin_target
   #define TARGET egg-palettize
   #define LOCAL_LIBS \
