@@ -62,6 +62,10 @@ public:
   int get_dependency_order() const;
   int get_dirname_order() const;
 
+  void set_group_size(int x_size, int y_size);
+  int get_group_x_size() const;
+  int get_group_y_size() const;
+
   void set_margin_override(const int override);
   int get_margin_override() const;
   bool has_margin_override() const;
@@ -105,6 +109,12 @@ private:
 
   typedef pmap<std::string, vector_string> TextureSwapInfo;
   TextureSwapInfo _textureSwapInfo;
+
+  // We can now configure per-palette group sizes in textures.txa.
+  // If a size is specified for a palette group, it will be stored here
+  // and used by PaletteImages associated with this group, rather than
+  // the global palette size.
+  int _group_x_size, _group_y_size;
 
   // The TypedWritable interface follows.
 public:

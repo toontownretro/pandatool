@@ -306,10 +306,10 @@ determine_size() {
     force_replace();
     _omit_reason = OR_coverage;
 
-  } else if ((_position._x_size > pal->_pal_x_size ||
-              _position._y_size > pal->_pal_y_size) ||
-             (_position._x_size == pal->_pal_x_size &&
-              _position._y_size == pal->_pal_y_size)) {
+  } else if ((_position._x_size > _group->get_group_x_size() ||
+              _position._y_size > _group->get_group_y_size()) ||
+             (_position._x_size == _group->get_group_x_size() &&
+              _position._y_size == _group->get_group_y_size())) {
     // If the texture exceeds the size of an empty palette image in either
     // dimension, or if it exactly equals the size of an empty palette image
     // in both dimensions, we can't place it because it's too big.

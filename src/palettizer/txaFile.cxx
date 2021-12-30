@@ -223,18 +223,49 @@ parse_group_line(const vector_string &words) {
     if (word == "with") {
       // Deprecated keyword: "with" means the same thing as "on".
       state = S_on;
+      ++wi;
 
     } else if (word == "on") {
       state = S_on;
+      ++wi;
 
     } else if (word == "includes") {
       state = S_includes;
+      ++wi;
 
     } else if (word == "dir") {
       state = S_dir;
+      ++wi;
 
     } else if (word == "margin") {
       state = S_margin;
+      ++wi;
+
+    } else if (word == "size") {
+      // Explicit size for this group, overriding the global
+      // :palette setting.
+      vector_int numbers;
+      ++wi;
+      while (numbers.size() < 2u && wi != words.end() && isdigit((*wi)[0])) {
+        int num;
+        if (!string_to_int(*wi, num)) {
+          nout << "Invalid group size: " << word << "\n";
+          return false;
+        }
+        numbers.push_back(num);
+        ++wi;
+      }
+
+      if (numbers.empty()) {
+        nout << "Expected at least one number after group size\n";
+        return false;
+
+      } else if (numbers.size() >= 2) {
+        group->set_group_size(numbers[0], numbers[1]);
+
+      } else {
+        group->set_group_size(numbers[0], numbers[0]);
+      }
 
     } else {
       switch (state) {
@@ -273,9 +304,9 @@ parse_group_line(const vector_string &words) {
         break;
       }
 
-    }
+      ++wi;
 
-    ++wi;
+    }
   }
 
   return true;

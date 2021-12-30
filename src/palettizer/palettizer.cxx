@@ -39,22 +39,23 @@ Palettizer *pal = nullptr;
 // update egg-palettize to write out additional information to its pi file,
 // without having it increment the bam version number for all bam and boo
 // files anywhere in the world.
-int Palettizer::_pi_version = 21;
+int Palettizer::_pi_version = 22;
 /*
  * Updated to version 8 on 32003 to remove extensions from texture key names.
  * Updated to version 9 on 41303 to add a few properties in various places.
- * Updated to version 10 on 41503 to add _alpha_file_channel.  Updated to
- * version 11 on 43003 to add TextureReference::_tref_name.  Updated to
- * version 12 on 91103 to add _generated_image_pattern.  Updated to version 13
- * on 91303 to add _keep_format and _background.  Updated to version 14 on
- * 72605 to add _omit_everything.  Updated to version 15 on 80105 to make
- * TextureImages be case-insensitive.  Updated to version 16 on 40306 to add
- * Palettizer::_cutout_mode et al.  Updated to version 17 on 30207 to add
- * TextureImage::_txa_wrap_u etc.  Updated to version 18 on 51308 to add
- * TextureProperties::_quality_level.  Updated to version 19 on 71609 to add
- * PaletteGroup::_override_margin Updated to version 20 on 72709 to add
- * TexturePlacement::_swapTextures
+ * Updated to version 10 on 41503 to add _alpha_file_channel.
+ * Updated to version 11 on 43003 to add TextureReference::_tref_name.
+ * Updated to version 12 on 91103 to add _generated_image_pattern.
+ * Updated to version 13 on 91303 to add _keep_format and _background.
+ * Updated to version 14 on 72605 to add _omit_everything.
+ * Updated to version 15 on 80105 to make TextureImages be case-insensitive.
+ * Updated to version 16 on 40306 to add Palettizer::_cutout_mode et al.
+ * Updated to version 17 on 30207 to add TextureImage::_txa_wrap_u etc.
+ * Updated to version 18 on 51308 to add TextureProperties::_quality_level.
+ * Updated to version 19 on 71609 to add PaletteGroup::_override_margin.
+ * Updated to version 20 on 72709 to add TexturePlacement::_swapTextures.
  * Updated to version 21 on 110120 to add sRGB support.
+ * Updated to version 22 on 121521 to support per-group sizes.
  */
 
 int Palettizer::_min_pi_version = 8;
@@ -190,7 +191,7 @@ report_pi() const {
     << FilenameUnifier::make_user_filename(_shadow_dirname) << "\n"
     << "  egg relative directory: "
     << FilenameUnifier::make_user_filename(_rel_dirname) << "\n"
-    << "  palettize size: " << _pal_x_size << " by " << _pal_y_size << "\n"
+    << "  global palettize size: " << _pal_x_size << " by " << _pal_y_size << "\n"
     << "  background: " << _background << "\n"
     << "  margin: " << _margin << "\n"
     << "  coverage threshold: " << _coverage_threshold << "\n"

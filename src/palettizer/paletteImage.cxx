@@ -148,8 +148,8 @@ PaletteImage(PalettePage *page, int index) :
 {
   _properties = page->get_properties();
   _size_known = true;
-  _x_size = pal->_pal_x_size;
-  _y_size = pal->_pal_y_size;
+  _x_size = page->get_group()->get_group_x_size();
+  _y_size = page->get_group()->get_group_y_size();
   _new_image = true;
   _got_image = false;
   _swapped_image = 0;
@@ -168,8 +168,8 @@ PaletteImage(PalettePage *page, int index, unsigned swapIndex) :
 {
   _properties = page->get_properties();
   _size_known = true;
-  _x_size = pal->_pal_x_size;
-  _y_size = pal->_pal_y_size;
+  _x_size = page->get_group()->get_group_x_size();
+  _y_size = page->get_group()->get_group_y_size();
   _new_image = true;
   _got_image = false;
 

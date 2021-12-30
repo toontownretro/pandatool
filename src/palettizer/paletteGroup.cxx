@@ -42,6 +42,8 @@ PaletteGroup() {
   _dirname_order = 0;
   _has_margin_override = false;
   _margin_override = 0;
+  _group_x_size = -1;
+  _group_y_size = -1;
 }
 
 /**
@@ -101,6 +103,44 @@ group_with(PaletteGroup *other) {
 const PaletteGroups &PaletteGroup::
 get_groups() const {
   return _dependent;
+}
+
+/**
+ * Specifies the maximum size of PaletteImages in this group.
+ * This overrides the global Palettizer::_pal_x/y_size settings.
+ */
+void PaletteGroup::
+set_group_size(int x_size, int y_size) {
+  _group_x_size = x_size;
+  _group_y_size = y_size;
+}
+
+/**
+ * Returns the maximum X size for PaletteImages in this group.
+ * Returns the global Palettizer::_pal_x_size if the group doesn't
+ * specify an override size.
+ */
+int PaletteGroup::
+get_group_x_size() const {
+  if (_group_x_size <= 0) {
+    return pal->_pal_x_size;
+  } else {
+    return _group_x_size;
+  }
+}
+
+/**
+ * Returns the maximum Y size for PaletteImages in this group.
+ * Returns the global Palettizer::_pal_y_size if the group doesn't
+ * specify an override size.
+ */
+int PaletteGroup::
+get_group_y_size() const {
+  if (_group_y_size <= 0) {
+    return pal->_pal_y_size;
+  } else {
+    return _group_y_size;
+  }
 }
 
 /**
@@ -592,6 +632,10 @@ write_datagram(BamWriter *writer, Datagram &datagram) {
   datagram.add_bool(_has_margin_override);
   datagram.add_int16(_margin_override);
 
+  if (Palettizer::_pi_version >= 22) {
+    datagram.add_int32(_group_x_size);
+    datagram.add_int32(_group_y_size);
+  }
 }
 
 /**
@@ -686,9 +730,14 @@ fillin(DatagramIterator &scan, BamReader *manager) {
   _num_pages = scan.get_uint32();
   manager->read_pointers(scan, _num_pages);
 
-  if(Palettizer::_read_pi_version >= 19) {
+  if (Palettizer::_read_pi_version >= 19) {
     _has_margin_override = scan.get_bool();
     _margin_override = scan.get_int16();
+  }
+
+  if (Palettizer::_read_pi_version >= 22) {
+    _group_x_size = scan.get_int32();
+    _group_y_size = scan.get_int32();
   }
 }
 
