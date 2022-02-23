@@ -16,17 +16,31 @@
     linmath:c putil:c pipeline:c express:c pandaexpress:m panda:m \
     interrogatedb dtoolutil:c dtoolbase:c prc  dtool:m
 
-  #define SOURCES \
-    gtkStats.cxx \
-    gtkStatsChartMenu.cxx gtkStatsChartMenu.h \
-    gtkStatsGraph.cxx gtkStatsGraph.h \
-    gtkStatsLabel.cxx gtkStatsLabel.h \
-    gtkStatsLabelStack.cxx gtkStatsLabelStack.h \
+  #define HEADERS \
+    gtkStatsChartMenu.h \
+    gtkStatsFlameGraph.h \
+    gtkStatsGraph.h \
+    gtkStatsLabel.h \
+    gtkStatsLabelStack.h \
     gtkStatsMenuId.h \
-    gtkStatsMonitor.cxx gtkStatsMonitor.h gtkStatsMonitor.I \
-    gtkStatsPianoRoll.cxx gtkStatsPianoRoll.h \
-    gtkStatsServer.cxx gtkStatsServer.h \
-    gtkStatsStripChart.cxx gtkStatsStripChart.h
+    gtkStatsMonitor.h gtkStatsMonitor.I \
+    gtkStatsPianoRoll.h \
+    gtkStatsServer.h \
+    gtkStatsStripChart.h
+
+  #define SOURCES \
+    $[HEADERS] \
+    gtkStats.cxx \
+    gtkStatsChartMenu.cxx \
+    gtkStatsFlameGraph.cxx \
+    gtkStatsGraph.cxx \
+    gtkStatsLabel.cxx \
+    gtkStatsLabelStack.cxx \
+    gtkStatsMonitor.cxx \
+    gtkStatsPianoRoll.cxx \
+    gtkStatsServer.cxx \
+    gtkStatsStripChart.cxx \
+    gtkStatsTimeline.cxx
 
   #if $[DEVELOP_GTKSTATS]
     #define EXTRA_CDEFS $[EXTRA_CDEFS] DEVELOP_GTKSTATS

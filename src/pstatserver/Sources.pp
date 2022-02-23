@@ -10,21 +10,38 @@
     $[if $[HAVE_NET],net:c] $[if $[WANT_NATIVE_NET],nativenet:c] \
     interrogatedb dtoolutil:c dtoolbase:c prc  dtool:m
 
+  #define HEADERS \
+    pStatClientData.h \
+    pStatFlameGraph.h pStatFlameGraph.I \
+    pStatGraph.h pStatGraph.I \
+    pStatListener.h \
+    pStatMonitor.h pStatMonitor.I \
+    pStatPianoRoll.h pStatPianoRoll.I \
+    pStatReader.h \
+    pStatServer.h \
+    pStatStripChart.h pStatStripChart.I \
+    pStatThreadData.h pStatThreadData.I \
+    pStatTimeline.h pStatTimeline.I \
+    pStatView.h pStatView.I \
+    pStatViewLevel.h pStatViewLevel.I
+
   #define SOURCES \
-    pStatClientData.cxx pStatClientData.h pStatGraph.I pStatGraph.cxx \
-    pStatGraph.h pStatListener.cxx pStatListener.h pStatMonitor.I \
-    pStatMonitor.cxx pStatMonitor.h pStatPianoRoll.I pStatPianoRoll.cxx \
-    pStatPianoRoll.h pStatReader.cxx pStatReader.h pStatServer.cxx \
-    pStatServer.h pStatStripChart.I pStatStripChart.cxx \
-    pStatStripChart.h pStatThreadData.I pStatThreadData.cxx \
-    pStatThreadData.h pStatView.I pStatView.cxx pStatView.h \
-    pStatViewLevel.I pStatViewLevel.cxx pStatViewLevel.h
+    $[HEADERS] \
+    pStatClientData.cxx \
+    pStatFlameGraph.cxx \
+    pStatGraph.cxx \
+    pStatListener.cxx \
+    pStatMonitor.cxx \
+    pStatPianoRoll.cxx \
+    pStatReader.cxx \
+    pStatServer.cxx \
+    pStatStripChart.cxx \
+    pStatThreadData.cxx \
+    pStatTimeline.cxx \
+    pStatView.cxx \
+    pStatViewLevel.cxx
 
   #define INSTALL_HEADERS \
-    pStatClientData.h pStatGraph.I pStatGraph.h pStatListener.h \
-    pStatMonitor.I pStatMonitor.h pStatPianoRoll.I pStatPianoRoll.h \
-    pStatReader.h pStatServer.h pStatStripChart.I pStatStripChart.h \
-    pStatThreadData.I pStatThreadData.h pStatView.I pStatView.h \
-    pStatViewLevel.I pStatViewLevel.h
+    $[HEADERS]
 
 #end ss_lib_target
