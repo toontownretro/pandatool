@@ -24,7 +24,9 @@
 #include <shellscalingapi.h>
 
 // Enable common controls version 6, necessary for modern visual styles
+#ifndef __clang__ // Clang doesn't support /manifestdependency.
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#endif
 
 static const char *toplevel_class_name = "pstats";
 static WinStatsServer *server = nullptr;
