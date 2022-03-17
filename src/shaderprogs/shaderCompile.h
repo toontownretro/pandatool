@@ -33,7 +33,7 @@ public:
 
   bool run();
 
-  bool compile_variation(int n);
+  void compile_variation(int n);
 
 protected:
   virtual bool handle_args(Args &args);
@@ -63,6 +63,8 @@ private:
   SkipCommand r_expand_expression(const std::string &str, size_t p);
   SkipCommand r_expand_command(const std::string &str, size_t &vp);
   std::string r_scan_variable(const std::string &str, size_t &vp);
+  void tokenize_params(const std::string &str, vector_string &tokens,
+                       bool expand);
 
   static bool dispatch_stage(const std::string &opt, const std::string &arg, void *var);
 
@@ -72,19 +74,6 @@ private:
 
     ShaderCompiler::Options options;
     bool skip;
-  };
-
-  class WorkerThread : public Thread {
-  public:
-    WorkerThread(ShaderCompile *prog, int first_index, int count);
-
-  protected:
-    virtual void thread_main() override;
-
-  private:
-    ShaderCompile *_prog;
-    int _first_index;
-    int _count;
   };
 
 public:
@@ -100,6 +89,7 @@ public:
   Filename _input_filename;
   pvector<VariationData> _variations;
   pvector<SkipCommand> _skip_commands;
+  vector_int _non_skipped_variations;
 };
 
 #endif // SHADERCOMPILE_H

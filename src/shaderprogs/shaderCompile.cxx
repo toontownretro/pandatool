@@ -23,10 +23,12 @@
 #include "bamWriter.h"
 #include "shaderCompilerGlslang.h"
 #include "load_prc_file.h"
+#include "threadManager.h"
 
 #define VARIABLE_PREFIX '$'
 #define VARIABLE_OPEN_BRACE '['
 #define VARIABLE_CLOSE_BRACE ']'
+#define FUNCTION_PARAMETER_SEPARATOR ','
 
 static AtomicAdjust::Integer progress = 0;
 static ShaderCompilerGlslang compiler;
@@ -182,55 +184,26 @@ run() {
   // Now for the real work.
   //
 
-  nout << "Compiling " << num_variations - _num_skipped << " combo variations for "
-       << _input_filename.get_basename() << "\n";
-  nout << "(" << _num_skipped << " skipped)\n";
+  ThreadManager::_num_threads = _num_threads;
 
-  // If we're using threads, divide the variations we need to compile amongst
-  // the threads.
-  if (_num_threads > 1) {
-    pvector<PT(WorkerThread)> threads;
-    int vars_per_thread = std::max((size_t)1, num_variations / _num_threads);
-    int vars_remaining = num_variations;
-    for (int i = 0; i < _num_threads && vars_remaining > 0; i++) {
-      int first_index = vars_per_thread * i;
-      int count = std::min(vars_per_thread, vars_remaining);
-
-      PT(WorkerThread) thread = new WorkerThread(this, first_index, count);
-      threads.push_back(thread);
-
-      vars_remaining -= count;
-    }
-
-    // Start the threads.
-    for (WorkerThread *thread : threads) {
-      thread->start(TP_normal, true);
-    }
-
-    // Now wait for our threads to finish and report the progress in the mean
-    // time.
-    while (true) {
-      AtomicAdjust::Integer prog = AtomicAdjust::get(progress);
-      std::cerr << "Progress:\t" << prog << "\t/\t" << num_variations << "\r";
-      if (prog >= num_variations) {
-        break;
-      }
-    }
-
-    for (WorkerThread *thread : threads) {
-      thread->join();
-    }
-
-  } else {
-    for (int i = 0; i < num_variations; i++) {
-      if (!compile_variation(i)) {
-        nout << "Errors occurred during compilation.\n";
-        return false;
-      }
-      AtomicAdjust::inc(progress);
-      std::cerr << "Progress:\t" << AtomicAdjust::get(progress) << "\t/\t" << num_variations << "\r";
+  _non_skipped_variations.reserve(_variations.size());
+  for (size_t i = 0; i < _variations.size(); ++i) {
+    if (!_variations[i].skip) {
+      _non_skipped_variations.push_back((int)i);
     }
   }
+  size_t num_real_variations = _non_skipped_variations.size();
+
+  nout << "Compiling " << num_real_variations << " combo variations for "
+       << _input_filename.get_basename() << "\n";
+  nout << "(" << _num_skipped << " skipped)\n";
+  nout << ThreadManager::_num_threads << " threads\n";
+
+  // Compile the first variation on the main thread to initialize glslang
+  // and others without race conditions.
+  compile_variation(_non_skipped_variations[_non_skipped_variations.size() - 1]);
+  ThreadManager::run_threads_on_individual("CompileVariations", (int)num_real_variations - 1, false,
+                                           std::bind(&ShaderCompile::compile_variation, this, std::placeholders::_1));
 
   // Now write the .sho file.
   BamFile bam;
@@ -250,17 +223,16 @@ run() {
 /**
  * Compiles a single variation of the shader.
  */
-bool ShaderCompile::
+void ShaderCompile::
 compile_variation(int n) {
-  const VariationData &vdata = _variations[n];
+  int v_index = _non_skipped_variations[n];
+  const VariationData &vdata = _variations[v_index];
 
-  if (vdata.skip) {
-    // A skipped variation.
-    return true;
-  }
+  // It shouldn't be a skipped variation.
+  assert(!vdata.skip);
 
   if (_verbose) {
-    nout << "Compiling variation " << n << " with defines:\n";
+    nout << "Compiling variation " << v_index << " with defines:\n";
     for (size_t i = 0; i < vdata.options.get_num_defines(); i++) {
       const ShaderCompiler::Options::Define *define = vdata.options.get_define(i);
       nout << "\t" << define->name->get_name() << "\t" << define->value << "\n";
@@ -270,7 +242,7 @@ compile_variation(int n) {
   std::istream *stream = _source_vf->open_read_file(true);
   if (stream == nullptr) {
     nout << "Error: Could not open shader file for reading: " << _input_filename << "\n";
-    return false;
+    exit(1);
   }
 
   PT(ShaderModule) module = compiler.compile_now(
@@ -286,12 +258,10 @@ compile_variation(int n) {
       const ShaderCompiler::Options::Define *define = vdata.options.get_define(i);
       nout << "\t" << define->name->get_name() << "\t" << define->value << "\n";
     }
-    return false;
+    exit(1);
   }
 
-  _sho->set_permutation(n, module);
-
-  return true;
+  _sho->set_permutation(v_index, module);
 }
 
 /**
@@ -390,6 +360,10 @@ collect_combos() {
         }
       }
 
+      if (_verbose) {
+        nout << "Skip expression: " << expression << "\n";
+      }
+
       // Parse the expression to build up an actual skip command.
       _skip_commands.push_back(r_expand_expression(expression, 0));
     }
@@ -409,6 +383,9 @@ r_expand_expression(const std::string &str, size_t p) {
     if (p + 1 < str.length() && str[p] == VARIABLE_PREFIX &&
         str[p + 1] == VARIABLE_OPEN_BRACE) {
         // Found a command.  Expand it.
+        if (_verbose) {
+          nout << "command: " << str << "\n";
+        }
         cmd = r_expand_command(str, p);
 
     } else {
@@ -428,6 +405,48 @@ r_expand_expression(const std::string &str, size_t p) {
   }
 
   return cmd;
+}
+
+/**
+ * Tokenizes the function parameters, skipping nested variables/functions.
+ */
+void ShaderCompile::
+tokenize_params(const std::string &str, vector_string &tokens,
+                bool expand) {
+  size_t p = 0;
+  while (p < str.length()) {
+    // Skip initial whitespace.
+    while (p < str.length() && isspace(str[p])) {
+      p++;
+    }
+
+    std::string token;
+    while (p < str.length() && str[p] != FUNCTION_PARAMETER_SEPARATOR) {
+      if (p + 1 < str.length() && str[p] == VARIABLE_PREFIX &&
+          str[p + 1] == VARIABLE_OPEN_BRACE) {
+        // Skip a nested variable reference.
+        token += r_scan_variable(str, p);
+      } else {
+        token += str[p];
+        p++;
+      }
+    }
+
+    // Back up past trailing whitespace.
+    size_t q = token.length();
+    while (q > 0 && isspace(token[q - 1])) {
+      q--;
+    }
+
+    tokens.push_back(token.substr(0, q));
+    p++;
+
+    if (p == str.length()) {
+      // In this case, we have just read past a trailing comma symbol
+      // at the end of the string, so we have one more empty token.
+      tokens.push_back(std::string());
+    }
+  }
 }
 
 /**
@@ -478,7 +497,7 @@ r_expand_command(const std::string &str, size_t &vp) {
     }
 
     vector_string params;
-    tokenize(varname.substr(p), params, ",");
+    tokenize_params(varname.substr(p), params, false);
 
     if (funcname == "and") {
       cmd.cmd = SkipCommand::C_and;
@@ -496,6 +515,9 @@ r_expand_command(const std::string &str, size_t &vp) {
     }
 
     for (size_t i = 0; i < params.size(); i++) {
+      if (_verbose) {
+        nout << "param " << i << ": " << params[i] << "\n";
+      }
       cmd.arguments.push_back(r_expand_expression(params[i], 0));
     }
   } else {
@@ -561,28 +583,6 @@ dispatch_stage(const std::string &opt, const std::string &arg, void *var) {
   }
 
   return true;
-}
-
-/**
- *
- */
-ShaderCompile::WorkerThread::
-WorkerThread(ShaderCompile *prog, int first_index, int count) :
-  Thread("ShaderCompileWorker", "ShaderCompileWorker"),
-  _prog(prog),
-  _first_index(first_index),
-  _count(count) {
-}
-
-/**
- *
- */
-void ShaderCompile::WorkerThread::
-thread_main() {
-  for (int i = _first_index; i < _first_index + _count; i++) {
-    _prog->compile_variation(i);
-    AtomicAdjust::inc(progress);
-  }
 }
 
 /**
