@@ -197,10 +197,14 @@ run() {
       int count = std::min(vars_per_thread, vars_remaining);
 
       PT(WorkerThread) thread = new WorkerThread(this, first_index, count);
-      thread->start(TP_urgent, true);
       threads.push_back(thread);
 
       vars_remaining -= count;
+    }
+
+    // Start the threads.
+    for (WorkerThread *thread : threads) {
+      thread->start(TP_normal, true);
     }
 
     // Now wait for our threads to finish and report the progress in the mean
@@ -212,6 +216,11 @@ run() {
         break;
       }
     }
+
+    for (WorkerThread *thread : threads) {
+      thread->join();
+    }
+
   } else {
     for (int i = 0; i < num_variations; i++) {
       if (!compile_variation(i)) {
@@ -270,7 +279,7 @@ compile_variation(int n) {
 
   _source_vf->close_read_file(stream);
 
-  if (!module) {
+  if (module == nullptr) {
     nout << "Failed to compile variation " << n << "!\n";
     nout << "Defines:\n";
     for (size_t i = 0; i < vdata.options.get_num_defines(); i++) {
@@ -280,12 +289,7 @@ compile_variation(int n) {
     return false;
   }
 
-  if (!module->is_of_type(ShaderModuleSpirV::get_class_type())) {
-    nout << "Error: variation " << n << " did not compile into a ShaderModuleSpirV!\n";
-    return false;
-  }
-
-  _sho->set_permutation(n, DCAST(ShaderModuleSpirV, module));
+  _sho->set_permutation(n, module);
 
   return true;
 }
