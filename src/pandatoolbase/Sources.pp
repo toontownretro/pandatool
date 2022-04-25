@@ -9,7 +9,7 @@
    interrogatedb prc  \
    dtoolutil:c dtoolbase:c dtool:m
 
-#define USE_PACKAGES threads eigen
+#define USE_PACKAGES threads eigen sleef
 
 #begin ss_lib_target
   #define TARGET pandatoolbase
