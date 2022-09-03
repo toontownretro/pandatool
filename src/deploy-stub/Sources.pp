@@ -14,7 +14,7 @@
   #if $[OSX_PLATFORM]
     #define LFLAGS $[LFLAGS] -sectcreate __PANDA __panda /dev/null
   #elif $[UNIX_PLATFORM]
-    #define LFLAGS $[LFLAGS] -Wl,-z,origin -rdynamic
+    #define LFLAGS $[LFLAGS] -Wl,--disable-new-dtags -Wl-z,origin -rdynamic
   #endif
 
 #end bin_target
