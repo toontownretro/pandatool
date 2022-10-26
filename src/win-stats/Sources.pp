@@ -42,6 +42,6 @@
   #endif
   #define EXTRA_CDEFS $[EXTRA_CDEFS] WIN32_LEAN_AND_MEAN
 
-  #define WIN_SYS_LIBS Imm32.lib winmm.lib kernel32.lib oldnames.lib user32.lib gdi32.lib comctl32.lib
+  #define WIN_SYS_LIBS Imm32.lib winmm.lib kernel32.lib oldnames.lib user32.lib gdi32.lib comctl32.lib comdlg32.lib UxTheme.lib
 
 #end bin_target
