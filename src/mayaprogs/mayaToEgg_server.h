@@ -52,6 +52,8 @@ protected:
   double _polygon_tolerance;
   bool _respect_maya_double_sided;
   bool _suppress_vertex_color;
+  bool _convert_cameras;
+  bool _convert_lights;
   bool _keep_all_uvsets;
   bool _round_uvs;
   bool _legacy_shader;

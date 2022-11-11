@@ -1886,7 +1886,8 @@ make_polyset(MayaNodeDesc *node_desc, const MDagPath &dag_path,
       ignore_vertex_color = default_color_def->_has_texture && !(egg_vertex_color || _always_show_vertex_color);
       // Print the variables which determined if we ignored vertex colors or not, If we're ignoring them.
       if (ignore_vertex_color) {
-        mayaegg_cat.debug() << "ignore_vertex_color = " << ignore_vertex_color << ", _has_texture = " << default_color_def->_has_texture 
+        mayaegg_cat.debug() << "Ignoring vertex colors with variables: ignore_vertex_color = "
+                            << ignore_vertex_color << ", _has_texture = " << default_color_def->_has_texture
                             << ", egg_vertex_color = " << egg_vertex_color << ", _always_show_vertex_color = " << _always_show_vertex_color << endl;
       }
     }

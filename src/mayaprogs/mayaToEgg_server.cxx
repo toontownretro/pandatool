@@ -19,6 +19,8 @@
 #include "config_mayaegg.h"
 #include "config_maya.h"  // for maya_cat
 #include "globPattern.h"
+#include "multiplexStream.h"
+#include "pnotify.h"
 
 /**
  *
@@ -72,6 +74,16 @@ MayaToEggServer() :
      "'vertex-color' may be applied to a particular model to override "
      "this setting locally.",
      &MayaToEggServer::dispatch_none, &_suppress_vertex_color);
+     
+  add_option
+    ("convert-cameras", "", 0,
+     "Convert all camera nodes to locators. Will preserve position and rotation.",
+     &MayaToEggServer::dispatch_none, &_convert_cameras);
+
+  add_option
+    ("convert-lights", "", 0,
+     "Convert all light nodes to locators. Will preserve position and rotation only.",
+     &MayaToEggServer::dispatch_none, &_convert_lights);
 
   add_option
     ("keep-uvs", "", 0,
@@ -218,6 +230,8 @@ run() {
   converter._respect_maya_double_sided = _respect_maya_double_sided;
   converter._always_show_vertex_color = !_suppress_vertex_color;
   converter._keep_all_uvsets = _keep_all_uvsets;
+  converter._convert_cameras = _convert_cameras;
+  converter._convert_lights = _convert_lights;
   converter._round_uvs = _round_uvs;
   converter._transform_type = _transform_type;
   converter._legacy_shader = _legacy_shader;
@@ -304,6 +318,10 @@ run() {
   _transform = LMatrix4d::ident_mat();
   _normals_mode = NM_preserve;
   _normals_threshold = 0.0;
+  _respect_maya_double_sided = false;
+  _suppress_vertex_color = false;
+  _convert_cameras = false;
+  _convert_lights = false;
   _got_start_frame = false;
   _got_end_frame = false;
   _got_frame_inc = false;
@@ -456,6 +474,14 @@ poll() {
 
 int main(int argc, char *argv[]) {
   MayaToEggServer prog;
+  
+  // Set our otsream ptr to cout, So the output can be captured into a log file if need be.
+  // We also want our standard output.
+  MultiplexStream log_stream = MultiplexStream();
+  Notify::ptr()->set_ostream_ptr(&log_stream, false);
+  log_stream.add_file(Filename("log.txt"));
+  log_stream.add_standard_output();
+  
   // Open a rendezvous port for receiving new connections from the client
   PT(Connection) rend = prog.qManager->open_TCP_server_rendezvous(4242, 50);
   if (rend.is_null()) {
