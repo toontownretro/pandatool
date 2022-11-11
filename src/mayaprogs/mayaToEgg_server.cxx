@@ -477,10 +477,10 @@ int main(int argc, char *argv[]) {
   
   // Set our otsream ptr to cout, So the output can be captured into a log file if need be.
   // We also want our standard output.
-  MultiplexStream log_stream = MultiplexStream();
-  Notify::ptr()->set_ostream_ptr(&log_stream, false);
-  log_stream.add_file(Filename("log.txt"));
-  log_stream.add_standard_output();
+  //MultiplexStream log_stream = MultiplexStream();
+  //Notify::ptr()->set_ostream_ptr(&log_stream, false);
+  //log_stream.add_file(Filename("log.txt"));
+  //log_stream.add_standard_output();
   
   // Open a rendezvous port for receiving new connections from the client
   PT(Connection) rend = prog.qManager->open_TCP_server_rendezvous(4242, 50);
