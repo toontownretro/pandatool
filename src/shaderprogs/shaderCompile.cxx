@@ -120,90 +120,103 @@ run() {
   collect_combos();
 
   size_t num_variations = _sho->get_total_combos();
+  assert(num_variations > 0);
 
   // Create all of our permutations up front, makes threading simpler.
   _sho->resize_permutations(num_variations);
   _variations.resize(num_variations);
 
   size_t n = _sho->get_num_combos();
+  if (n > 0 && num_variations > 1) {
+    // There are combos for this shader, so compile each possible variation of
+    // combo values.
 
-  int *indices = new int[n];
-  memset(indices, 0, sizeof(int) * n);
+    int *indices = new int[n];
+    memset(indices, 0, sizeof(int) * n);
 
-  int index = 0;
+    int index = 0;
 
-  // Build the combo values for each variation we will be compiling.
-  while (true) {
-    VariationData &vdata = _variations[index];
-    vdata.skip = false;
+    // Build the combo values for each variation we will be compiling.
+    while (true) {
+      VariationData &vdata = _variations[index];
+      vdata.skip = false;
 
-    for (size_t i = 0; i < n; i++) {
-      const ShaderObject::Combo *combo = &(_sho->get_combo(i));
-      vdata.options.set_define(combo->name, combo->min_val + indices[i]);
-    }
+      for (size_t i = 0; i < n; i++) {
+        const ShaderObject::Combo *combo = &(_sho->get_combo(i));
+        vdata.options.set_define(combo->name, combo->min_val + indices[i]);
+      }
 
-    _curr_options = &vdata.options;
-    // Evaluate the skip commands to see if we should skip this variation.
-    for (size_t i = 0; i < _skip_commands.size(); i++) {
-      if (_skip_commands[i].eval() != 0) {
-        // The expression evaluated to true for this variation.  Skip it.
-        vdata.skip = true;
-        if (_verbose) {
-          nout << "Skipping variation " << index << " with defines:\n";
-          for (size_t i = 0; i < vdata.options.get_num_defines(); i++) {
-            const ShaderCompiler::Options::Define *define = vdata.options.get_define(i);
-            nout << "\t" << define->name->get_name() << "\t" << define->value << "\n";
+      _curr_options = &vdata.options;
+      // Evaluate the skip commands to see if we should skip this variation.
+      for (size_t i = 0; i < _skip_commands.size(); i++) {
+        if (_skip_commands[i].eval() != 0) {
+          // The expression evaluated to true for this variation.  Skip it.
+          vdata.skip = true;
+          if (_verbose) {
+            nout << "Skipping variation " << index << " with defines:\n";
+            for (size_t i = 0; i < vdata.options.get_num_defines(); i++) {
+              const ShaderCompiler::Options::Define *define = vdata.options.get_define(i);
+              nout << "\t" << define->name->get_name() << "\t" << define->value << "\n";
+            }
           }
+          _num_skipped++;
+          break;
         }
-        _num_skipped++;
+      }
+      _curr_options = nullptr;
+
+      int next = n - 1;
+      while ((next >= 0) &&
+            ((indices[next] + 1) >= (_sho->get_combo(next).max_val - _sho->get_combo(next).min_val) + 1)) {
+        next--;
+      }
+
+      if (next < 0) {
         break;
       }
-    }
-    _curr_options = nullptr;
 
-    int next = n - 1;
-    while ((next >= 0) &&
-           ((indices[next] + 1) >= (_sho->get_combo(next).max_val - _sho->get_combo(next).min_val) + 1)) {
-      next--;
-    }
+      indices[next]++;
 
-    if (next < 0) {
-      break;
+      for (int i = next + 1; i < n; i++) {
+        indices[i] = 0;
+      }
+
+      index++;
     }
 
-    indices[next]++;
+    //
+    // Now for the real work.
+    //
 
-    for (int i = next + 1; i < n; i++) {
-      indices[i] = 0;
+    ThreadManager::_num_threads = _num_threads;
+
+    _non_skipped_variations.reserve(_variations.size());
+    for (size_t i = 0; i < _variations.size(); ++i) {
+      if (!_variations[i].skip) {
+        _non_skipped_variations.push_back((int)i);
+      }
     }
+    size_t num_real_variations = _non_skipped_variations.size();
 
-    index++;
+    nout << "Compiling " << num_real_variations << " combo variations for "
+        << _input_filename.get_basename() << "\n";
+    nout << "(" << _num_skipped << " skipped)\n";
+    nout << ThreadManager::_num_threads << " threads\n";
+
+    // Compile the first variation on the main thread to initialize glslang
+    // and others without race conditions.
+    compile_variation(_non_skipped_variations[_non_skipped_variations.size() - 1]);
+    ThreadManager::run_threads_on_individual("CompileVariations", (int)num_real_variations - 1, false,
+                                            std::bind(&ShaderCompile::compile_variation, this, std::placeholders::_1));
+
+  } else {
+    // In this case we have no combos, and only one possible variation for this shader.
+    // Compile the single variation.
+
+    _variations[0].skip = false;
+    _non_skipped_variations.push_back(0);
+    compile_variation(0);
   }
-
-  //
-  // Now for the real work.
-  //
-
-  ThreadManager::_num_threads = _num_threads;
-
-  _non_skipped_variations.reserve(_variations.size());
-  for (size_t i = 0; i < _variations.size(); ++i) {
-    if (!_variations[i].skip) {
-      _non_skipped_variations.push_back((int)i);
-    }
-  }
-  size_t num_real_variations = _non_skipped_variations.size();
-
-  nout << "Compiling " << num_real_variations << " combo variations for "
-       << _input_filename.get_basename() << "\n";
-  nout << "(" << _num_skipped << " skipped)\n";
-  nout << ThreadManager::_num_threads << " threads\n";
-
-  // Compile the first variation on the main thread to initialize glslang
-  // and others without race conditions.
-  compile_variation(_non_skipped_variations[_non_skipped_variations.size() - 1]);
-  ThreadManager::run_threads_on_individual("CompileVariations", (int)num_real_variations - 1, false,
-                                           std::bind(&ShaderCompile::compile_variation, this, std::placeholders::_1));
 
   // Now write the .sho file.
   BamFile bam;
