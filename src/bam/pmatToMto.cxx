@@ -116,7 +116,7 @@ run() {
     tex->clear_alpha_filename();
     tex->clear_alpha_fullpath();
 
-    auto it = tex_index->_assets.find(tex->get_filename().get_basename_wo_extension());
+    auto it = tex_index->_assets.find(tex->get_fullpath());
     if (it == tex_index->_assets.end()) {
       std::cerr << "Could not locate texture "
                 << tex->get_filename()

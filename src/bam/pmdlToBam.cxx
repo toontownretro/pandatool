@@ -129,7 +129,7 @@ run() {
           return false;
         }
 
-        auto mi = mat_assets->_assets.find(mat->get_filename().get_basename_wo_extension());
+        auto mi = mat_assets->_assets.find(mat->get_fullpath());
         if (mi == mat_assets->_assets.end()) {
           nout << "Material " << mat->get_filename()
               << " does not exist in the model index!  Add it to a Sources.pp file.\n";
@@ -156,7 +156,7 @@ run() {
       for (auto it = _textures.begin(); it != _textures.end(); ++it) {
         Texture *tex = *it;
 
-        auto ti = tex_assets->_assets.find(tex->get_filename().get_basename_wo_extension());
+        auto ti = tex_assets->_assets.find(tex->get_fullpath());
         if (ti == tex_assets->_assets.end()) {
           nout << "Texture " << tex->get_filename()
               << " does not exist in the model index!  Add it to a Sources.pp file.\n";
