@@ -30,7 +30,7 @@
 #begin bin_target
   #define TARGET asset-list-depends
   #define OTHER_LIBS \
-    $[OTHER_LIBS] egg2pg:c gobj:c
+    $[OTHER_LIBS] egg2pg:c egg:c gobj:c pandaegg:m
 
   #define SOURCES \
     assetListDepends.cxx assetListDepends.h
