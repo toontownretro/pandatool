@@ -40,11 +40,12 @@ int main(int argc, char *argv[]) {
 
   // Create the server window.
   WinStatsServer *server = new WinStatsServer;
-  if (server->parse_command_line(argc, argv) == ProgramBase::EC_failure) {
-    MessageBox(nullptr, "Failed to parse command-line options.",
-               "PStats Error", MB_OK | MB_ICONEXCLAMATION);
-    return 1;
-  }
+  server->parse_command_line(argc, argv);
+  //if (server->parse_command_line(argc, argv) == ProgramBase::EC_failure) {
+  //  MessageBox(nullptr, "Failed to parse command-line options.",
+  //             "PStats Error", MB_OK | MB_ICONEXCLAMATION);
+  //  return 1;
+  //}
 
   // Now get lost in the Windows message loop.
   MSG msg;
