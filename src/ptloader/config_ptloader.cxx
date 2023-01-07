@@ -79,11 +79,11 @@ init_libptloader() {
 
   LoaderFileTypeRegistry *reg = LoaderFileTypeRegistry::get_global_ptr();
 
-  init_liblwo();
+  init_libflt();
   //FltToEggConverter *flt = new FltToEggConverter;
   //reg->register_type(new LoaderFileTypePandatool(flt));
 
-  init_libflt();
+  init_liblwo();
   //LwoToEggConverter *lwo = new LwoToEggConverter;
   //reg->register_type(new LoaderFileTypePandatool(lwo));
 

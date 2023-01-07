@@ -28,7 +28,7 @@
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #endif
 
-int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
+int main(int argc, char *argv[]) {
   // Initialize commctl32.dll.
   INITCOMMONCONTROLSEX icc;
   icc.dwICC = ICC_WIN95_CLASSES | ICC_STANDARD_CLASSES;
@@ -40,7 +40,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
   // Create the server window.
   WinStatsServer *server = new WinStatsServer;
-  server->new_session();
+  if (server->parse_command_line(argc, argv, false) == ProgramBase::EC_failure) {
+    MessageBox(nullptr, "Failed to parse command-line options.",
+               "PStats Error", MB_OK | MB_ICONEXCLAMATION);
+    return 1;
+  }
 
   // Now get lost in the Windows message loop.
   MSG msg;
@@ -56,13 +60,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     retval = GetMessage(&msg, nullptr, 0, 0);
   }
 
-  return (0);
+  return 0;
 }
 
-// WinMain() is the correct way to start a Windows-only application, but it is
-// sometimes more convenient during development to use main() instead, which
-// doesn't squelch the stderr output.
-
-int main(int argc, char *argv[]) {
-  return WinMain(nullptr, nullptr, nullptr, 0);
+int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
+  return main(__argc, __argv);
 }
