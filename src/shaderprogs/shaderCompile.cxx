@@ -205,7 +205,7 @@ run() {
 
     // Compile the first variation on the main thread to initialize glslang
     // and others without race conditions.
-    compile_variation(_non_skipped_variations[_non_skipped_variations.size() - 1]);
+    compile_variation(num_real_variations - 1);
     ThreadManager::run_threads_on_individual("CompileVariations", (int)num_real_variations - 1, false,
                                             std::bind(&ShaderCompile::compile_variation, this, std::placeholders::_1));
 
@@ -238,7 +238,9 @@ run() {
  */
 void ShaderCompile::
 compile_variation(int n) {
+  assert(n >= 0 && n < (int)_non_skipped_variations.size());
   int v_index = _non_skipped_variations[n];
+  assert(v_index >= 0 && v_index < (int)_variations.size());
   const VariationData &vdata = _variations[v_index];
 
   // It shouldn't be a skipped variation.
