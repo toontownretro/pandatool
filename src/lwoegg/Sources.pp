@@ -20,8 +20,7 @@
   #define COMPOSITE_SOURCES \
      cLwoClip.cxx cLwoLayer.cxx cLwoPoints.cxx cLwoPolygons.cxx  \
      cLwoSurface.cxx cLwoSurfaceBlock.cxx  \
-     cLwoSurfaceBlockTMap.cxx lwoToEggConverter.cxx  \
-     lwoToEggConverter.h
+     cLwoSurfaceBlockTMap.cxx lwoToEggConverter.cxx
 
   #define INSTALL_HEADERS \
     lwoToEggConverter.I lwoToEggConverter.h
