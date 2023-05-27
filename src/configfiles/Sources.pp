@@ -1,6 +1,6 @@
 
 #define INSTALL_CONFIG \
-  30_pandatool.prc
+  $[ODIR_GEN]/30_pandatool.prc
 
 #if $[CTPROJS]
   // These files only matter to ctattach users.

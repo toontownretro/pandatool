@@ -5,7 +5,9 @@
 // ppremake time.
 //
 
-#output 30_pandatool.prc notouch
+#mkdir $[ODIR_GEN]
+
+#output $[ODIR_GEN]/30_pandatool.prc notouch
 #### Generated automatically by $[PPREMAKE] $[PPREMAKE_VERSION] from $[notdir $[THISFILENAME]].
 ################################# DO NOT EDIT ###########################
 
@@ -17,4 +19,4 @@
 
 load-file-type ptloader
 
-#end 30_pandatool.prc
+#end $[ODIR_GEN]/30_pandatool.prc
