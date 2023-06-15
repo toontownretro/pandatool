@@ -681,7 +681,7 @@ get_format_string(EggTexture::Format format) {
     return "sl";
 
   case EggTexture::F_sluminance_alpha:
-    return "sla";
+    return "st";
   }
 
   return "x";
