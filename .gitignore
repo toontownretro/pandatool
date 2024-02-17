@@ -16,8 +16,10 @@ src/configfiles/30_pandatool.prc
 src/vrml/vrmlLexer.cxx
 src/vrml/vrmlParser.cxx
 src/vrml/vrmlParser.h
+src/vrml/vrmlParser.yxx.h
 src/xfile/xLexer.cxx
 src/xfile/xParser.cxx
 src/xfile/xParser.h
+src/xfile/xParser.yxx.h
 *.pyc
 __pycache__
