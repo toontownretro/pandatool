@@ -6,16 +6,14 @@
  * license.  You should have received a copy of this license along
  * with this source code in a file named "LICENSE."
  *
- * @file config_palettizer.h
- * @author drose
- * @date 2003-09-12
+ * @file macStats.h
+ * @author rdb
+ * @date 2023-08-17
  */
 
-#ifndef CONFIG_PALETTIZER_H
-#define CONFIG_PALETTIZER_H
+#ifndef MACSTATS_H
+#define MACSTATS_H
 
-#include "pandatoolbase.h"
+#include "pStatServer.h"
 
-void init_libpalettizer();
-
-#endif /* CONFIG_PALETTIZER_H */
+#endif

@@ -7,7 +7,7 @@
 
   // We rename TARGET to pstats-gtk on Windows, so it won't compete
   // with Windows-native pstats.
-  #define TARGET $[if $[WINDOWS_PLATFORM],pstats-gtk,pstats]
+  #define TARGET $[if $[or $[WINDOWS_PLATFORM],$[OSX_PLATFORM]],pstats-gtk,pstats]
   #define LOCAL_LIBS \
     progbase pstatserver
   #define OTHER_LIBS \
