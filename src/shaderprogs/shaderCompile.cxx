@@ -24,14 +24,8 @@
 #include "shaderCompilerGlslang.h"
 #include "load_prc_file.h"
 #include "threadManager.h"
+#include "config_shader.h"
 
-#define VARIABLE_PREFIX '$'
-#define VARIABLE_OPEN_BRACE '['
-#define VARIABLE_CLOSE_BRACE ']'
-#define FUNCTION_PARAMETER_SEPARATOR ','
-
-static AtomicAdjust::Integer progress = 0;
-static ShaderCompilerGlslang compiler;
 static ShaderCompile *g_prog = nullptr;
 
 /**
@@ -44,7 +38,7 @@ ShaderCompile() :
   _stage = ShaderModule::Stage::vertex;
   _preferred_extension = ".sho";
   _num_threads = 1;
-  _sho = new ShaderObject;
+  _sho = nullptr;
   _verbose = false;
   _num_skipped = 0;
   _curr_options = nullptr;
@@ -95,35 +89,31 @@ ShaderCompile() :
  */
 bool ShaderCompile::
 run() {
-  // First, find and open the source file.
-  VirtualFileSystem *vfs = VirtualFileSystem::get_global_ptr();
-  PT(VirtualFile) vf = vfs->find_file(_input_filename, get_model_path());
-  if (vf == nullptr) {
-    nout << "Error: Could not find shader file: " << _input_filename << "\n";
+
+  if (_verbose) {
+    shadermgr_cat->set_severity(NS_debug);
+  }
+
+  Shader::ShaderLanguage lang = Shader::SL_none;
+  if (_input_filename.get_extension() == "glsl") {
+    lang = Shader::SL_GLSL;
+  } else if (_input_filename.get_extension() == "hlsl") {
+    lang = Shader::SL_HLSL;
+  } else {
+    nout << "Error: unsupported shader language " << _input_filename.get_extension() << "\n";
     return false;
   }
-  _source_vf = vf;
 
-  _shader_source = vf->read_file(true);
+  _sho = ShaderObject::read_source(lang, _stage, _input_filename);
+  if (_sho == nullptr) {
+    nout << "Error: failed to read shader object!\n";
+    return false;
+  }
 
   nout << "Compiling a " << _stage << " shader\n";
 
-  //if (_verbose) {
-  //  vector_uchar code;
-  //  VirtualFile::simple_read_file(_source_stream, code);
-  //  for (size_t i = 0; i < code.size(); i++) {
-  //    nout << code[i];
-  //  }
-  //}
-
-  // Now collect all the combos specified in the source.
-  collect_combos();
-
-  size_t num_variations = _sho->get_total_combos();
-  assert(num_variations > 0);
-
   // Create all of our permutations up front, makes threading simpler.
-  _sho->resize_permutations(num_variations);
+  size_t num_variations = _sho->get_total_combos();
   _variations.resize(num_variations);
 
   size_t n = _sho->get_num_combos();
@@ -140,30 +130,29 @@ run() {
     while (true) {
       VariationData &vdata = _variations[index];
       vdata.skip = false;
+      vdata.builder.reset(_sho);
 
       for (size_t i = 0; i < n; i++) {
         const ShaderObject::Combo *combo = &(_sho->get_combo(i));
-        vdata.options.set_define(combo->name, combo->min_val + indices[i]);
+        vdata.builder.set_combo_value(i, combo->min_val + indices[i]);
       }
 
-      _curr_options = &vdata.options;
       // Evaluate the skip commands to see if we should skip this variation.
-      for (size_t i = 0; i < _skip_commands.size(); i++) {
-        if (_skip_commands[i].eval() != 0) {
+      for (size_t i = 0; i < _sho->get_num_skip_commands(); i++) {
+        if (_sho->get_skip_command(i)->eval(vdata.builder) != 0) {
           // The expression evaluated to true for this variation.  Skip it.
           vdata.skip = true;
           if (_verbose) {
             nout << "Skipping variation " << index << " with defines:\n";
-            for (size_t i = 0; i < vdata.options.get_num_defines(); i++) {
-              const ShaderCompiler::Options::Define *define = vdata.options.get_define(i);
-              nout << "\t" << define->name->get_name() << "\t" << define->value << "\n";
+            for (size_t i = 0; i < _sho->get_num_combos(); i++) {
+              const ShaderObject::Combo &combo = _sho->get_combo(i);
+              nout << "\t" << combo.name->get_name()  << "\t" << vdata.builder._combo_values[i] << "\n";
             }
           }
           _num_skipped++;
           break;
         }
       }
-      _curr_options = nullptr;
 
       int next = n - 1;
       while ((next >= 0) &&
@@ -214,6 +203,7 @@ run() {
     // Compile the single variation.
 
     _variations[0].skip = false;
+    _variations[0].builder.reset(_sho);
     _non_skipped_variations.push_back(0);
     compile_variation(0);
   }
@@ -245,38 +235,24 @@ compile_variation(int n) {
 
   // It shouldn't be a skipped variation.
   assert(!vdata.skip);
+  // Sanity check our index.
+  assert(vdata.builder.get_module_index() == v_index);
 
   if (_verbose) {
     nout << "Compiling variation " << v_index << " with defines:\n";
-    for (size_t i = 0; i < vdata.options.get_num_defines(); i++) {
-      const ShaderCompiler::Options::Define *define = vdata.options.get_define(i);
-      nout << "\t" << define->name->get_name() << "\t" << define->value << "\n";
+    for (size_t i = 0; i < _sho->get_num_combos(); i++) {
+      const ShaderObject::Combo &combo = _sho->get_combo(i);
+      nout << "\t" << combo.name->get_name() << "\t" << vdata.builder._combo_values[i] << "\n";
     }
   }
 
-  std::istream *stream = _source_vf->open_read_file(true);
-  if (stream == nullptr) {
-    nout << "Error: Could not open shader file for reading: " << _input_filename << "\n";
-    exit(1);
-  }
-
-  PT(ShaderModule) module = compiler.compile_now(
-    _stage, *stream, _source_vf->get_filename(),
-    vdata.options, nullptr);
-
-  _source_vf->close_read_file(stream);
-
-  if (module == nullptr) {
+  // Call get_module() to compile the variation and store it on the
+  // ShaderObject.
+  ShaderModule *mod = vdata.builder.get_module(true);
+  if (mod == nullptr) {
     nout << "Failed to compile variation " << n << "!\n";
-    nout << "Defines:\n";
-    for (size_t i = 0; i < vdata.options.get_num_defines(); i++) {
-      const ShaderCompiler::Options::Define *define = vdata.options.get_define(i);
-      nout << "\t" << define->name->get_name() << "\t" << define->value << "\n";
-    }
     exit(1);
   }
-
-  _sho->set_permutation(v_index, module);
 }
 
 /**
@@ -300,284 +276,6 @@ handle_args(Args &args) {
 }
 
 /**
- * Parses the shader source, looking for combos.  Discovered combo definitions
- * are added to the shader object.
- */
-void ShaderCompile::
-collect_combos() {
-  vector_string lines;
-  tokenize(_shader_source, lines, "\n");
-
-  for (size_t i = 0; i < lines.size(); i++) {
-    const std::string &line = lines[i];
-
-    if (line.size() < 7) {
-      // Can't contain combo.
-      continue;
-    }
-
-    if (line.substr(0, 7) != "#pragma") {
-      // Line doesn't start with #pragma, can't possibly be a combo definition.
-      continue;
-    }
-
-    // Get everything after the #pragma.
-    std::string combo_line = line.substr(7);
-    vector_string combo_words;
-    extract_words(combo_line, combo_words);
-
-    if (combo_words.size() == 0) {
-      // It's not a #pragma combo.
-      continue;
-    }
-
-    if (combo_words[0] == "combo") {
-      // It's a combo command.
-
-      // Must contain four words: combo, name, min val, max val.
-      if (combo_words.size() != 4) {
-        nout << "Error: Invalid combo definition at line " << i + 1 << " of "
-            << _input_filename.get_fullpath() << "\n";
-        continue;
-      }
-
-      std::string name = combo_words[1];
-      int min_val, max_val;
-      if (!string_to_int(combo_words[2], min_val)) {
-        nout << "Error: Invalid min combo value at line " << i + 1 << " of "
-            << _input_filename.get_fullpath() << "\n";
-        continue;
-      }
-      if (!string_to_int(combo_words[3], max_val)) {
-        nout << "Error: Invalid max combo value at line " << i + 1 << " of "
-            << _input_filename.get_fullpath() << "\n";
-        continue;
-      }
-
-      ShaderObject::Combo combo;
-      combo.name = InternalName::make(name);
-      combo.min_val = min_val;
-      combo.max_val = max_val;
-      if (_verbose) {
-        nout << "Found combo " << name << " with min value " << min_val
-            << " and max value " << max_val << "\n";
-      }
-      _sho->add_combo(std::move(combo));
-
-    } else if (combo_words[0] == "skip") {
-      // It's a skip command.  Everything after the skip is the expression.
-
-      std::string expression;
-      for (size_t i = 1; i < combo_words.size(); i++) {
-        expression += combo_words[i];
-        if (i < combo_words.size() - 1) {
-          expression += " ";
-        }
-      }
-
-      if (_verbose) {
-        nout << "Skip expression: " << expression << "\n";
-      }
-
-      // Parse the expression to build up an actual skip command.
-      _skip_commands.push_back(r_expand_expression(expression, 0));
-    }
-  }
-}
-
-/**
- *
- */
-ShaderCompile::SkipCommand ShaderCompile::
-r_expand_expression(const std::string &str, size_t p) {
-  SkipCommand cmd;
-
-  std::string literal;
-  // Search for the beginning of a command.
-  while (p < str.length()) {
-    if (p + 1 < str.length() && str[p] == VARIABLE_PREFIX &&
-        str[p + 1] == VARIABLE_OPEN_BRACE) {
-        // Found a command.  Expand it.
-        if (_verbose) {
-          nout << "command: " << str << "\n";
-        }
-        cmd = r_expand_command(str, p);
-
-    } else {
-      // Must just be a literal value.
-      cmd.cmd = SkipCommand::C_literal;
-      literal += str[p];
-      p++;
-    }
-  }
-
-  if (cmd.cmd == SkipCommand::C_literal) {
-    bool ret = string_to_int(literal, cmd.value);
-    if (!ret) {
-      nout << "Error!  Invalid literal integer: " << literal << "\n";
-      assert(0);
-    }
-  }
-
-  return cmd;
-}
-
-/**
- * Tokenizes the function parameters, skipping nested variables/functions.
- */
-void ShaderCompile::
-tokenize_params(const std::string &str, vector_string &tokens,
-                bool expand) {
-  size_t p = 0;
-  while (p < str.length()) {
-    // Skip initial whitespace.
-    while (p < str.length() && isspace(str[p])) {
-      p++;
-    }
-
-    std::string token;
-    while (p < str.length() && str[p] != FUNCTION_PARAMETER_SEPARATOR) {
-      if (p + 1 < str.length() && str[p] == VARIABLE_PREFIX &&
-          str[p + 1] == VARIABLE_OPEN_BRACE) {
-        // Skip a nested variable reference.
-        token += r_scan_variable(str, p);
-      } else {
-        token += str[p];
-        p++;
-      }
-    }
-
-    // Back up past trailing whitespace.
-    size_t q = token.length();
-    while (q > 0 && isspace(token[q - 1])) {
-      q--;
-    }
-
-    tokens.push_back(token.substr(0, q));
-    p++;
-
-    if (p == str.length()) {
-      // In this case, we have just read past a trailing comma symbol
-      // at the end of the string, so we have one more empty token.
-      tokens.push_back(std::string());
-    }
-  }
-}
-
-/**
- *
- */
-ShaderCompile::SkipCommand ShaderCompile::
-r_expand_command(const std::string &str, size_t &vp) {
-  SkipCommand cmd;
-
-  std::string varname;
-  size_t whitespace_at = 0;
-
-  size_t p = vp + 2;
-  while (p < str.length() && str[p] != VARIABLE_CLOSE_BRACE) {
-    if (p + 1 < str.length() && str[p] == VARIABLE_PREFIX &&
-        str[p + 1] == VARIABLE_OPEN_BRACE) {
-      if (whitespace_at == 0) {
-        nout << "Error!  Nested skip commands can only be function arguments.\n";
-        assert(0);
-      }
-
-      varname += r_scan_variable(str, p);
-    } else {
-      if (whitespace_at == 0 && isspace(str[p])) {
-        whitespace_at = p - (vp + 2);
-      }
-      varname += str[p];
-      p++;
-    }
-  }
-
-  if (p < str.length()) {
-    assert(str[p] == VARIABLE_CLOSE_BRACE);
-    p++;
-  } else {
-    nout << "Warning!  Unclosed variable reference:\n"
-         << str.substr(vp) << "\n";
-  }
-
-  vp = p;
-
-  // Check for a function expansion.
-  if (whitespace_at != 0) {
-    std::string funcname = varname.substr(0, whitespace_at);
-    p = whitespace_at;
-    while (p < varname.length() && isspace(varname[p])) {
-      p++;
-    }
-
-    vector_string params;
-    tokenize_params(varname.substr(p), params, false);
-
-    if (funcname == "and") {
-      cmd.cmd = SkipCommand::C_and;
-    } else if (funcname == "or") {
-      cmd.cmd = SkipCommand::C_or;
-    } else if (funcname == "not") {
-      cmd.cmd = SkipCommand::C_not;
-    } else if (funcname == "eq") {
-      cmd.cmd = SkipCommand::C_eq;
-    } else if (funcname == "neq") {
-      cmd.cmd = SkipCommand::C_neq;
-    } else {
-      nout << "Error!  Unknown skip function: " << funcname << "\n";
-      assert(0);
-    }
-
-    for (size_t i = 0; i < params.size(); i++) {
-      if (_verbose) {
-        nout << "param " << i << ": " << params[i] << "\n";
-      }
-      cmd.arguments.push_back(r_expand_expression(params[i], 0));
-    }
-  } else {
-    // Not a function, must be a combo variable reference.
-    cmd.cmd = SkipCommand::C_ref;
-    cmd.name = varname;
-  }
-
-  return cmd;
-}
-
-/**
- *
- */
-std::string ShaderCompile::
-r_scan_variable(const std::string &str, size_t &vp) {
-
-  // Search for the end of the variable name: an unmatched square
-  // bracket.
-  size_t start = vp;
-  size_t p = vp + 2;
-  while (p < str.length() && str[p] != VARIABLE_CLOSE_BRACE) {
-    if (p + 1 < str.length() && str[p] == VARIABLE_PREFIX &&
-        str[p + 1] == VARIABLE_OPEN_BRACE) {
-      // Here's a nested variable!  Scan past it, matching braces
-      // properly.
-      r_scan_variable(str, p);
-    } else {
-      p++;
-    }
-  }
-
-  if (p < str.length()) {
-    assert(str[p] == VARIABLE_CLOSE_BRACE);
-    p++;
-  } else {
-    nout << "Warning!  Unclosed variable reference:\n"
-         << str.substr(vp) << "\n";
-  }
-
-  vp = p;
-  return str.substr(start, vp - start);
-}
-
-/**
  *
  */
 bool ShaderCompile::
@@ -598,60 +296,6 @@ dispatch_stage(const std::string &opt, const std::string &arg, void *var) {
   }
 
   return true;
-}
-
-/**
- *
- */
-int ShaderCompile::SkipCommand::
-eval() {
-  switch (cmd) {
-
-  case C_and: {
-    // All of the arguments must evaluate to true.
-    for (size_t i = 0; i < arguments.size(); i++) {
-      if (!arguments[i].eval()) {
-        return 0;
-      }
-    }
-
-    return 1;
-  }
-
-  case C_or: {
-    // At least one argument must evaluate to true.
-    for (size_t i = 0; i < arguments.size(); i++) {
-      if (arguments[i].eval()) {
-        return 1;
-      }
-    }
-
-    return 0;
-  }
-
-  case C_not: {
-    return !arguments[0].eval();
-  }
-
-  case C_eq: {
-    return arguments[0].eval() == arguments[1].eval();
-  }
-
-  case C_neq: {
-    return arguments[0].eval() != arguments[1].eval();
-  }
-
-  case C_literal: {
-    return value;
-  }
-
-  case C_ref: {
-    return g_prog->_curr_options->get_define(name)->value;
-  }
-
-  default:
-    return 0;
-  }
 }
 
 /**

@@ -39,40 +39,13 @@ protected:
   virtual bool handle_args(Args &args);
 
 private:
-  class SkipCommand {
-  public:
-    enum Command {
-      C_and,
-      C_or,
-      C_not,
-      C_ref,
-      C_eq,
-      C_neq,
-      C_literal,
-    };
-
-    int eval();
-
-    Command cmd;
-    pvector<SkipCommand> arguments;
-    int value;
-    CPT_InternalName name;
-  };
-
-  void collect_combos();
-  SkipCommand r_expand_expression(const std::string &str, size_t p);
-  SkipCommand r_expand_command(const std::string &str, size_t &vp);
-  std::string r_scan_variable(const std::string &str, size_t &vp);
-  void tokenize_params(const std::string &str, vector_string &tokens,
-                       bool expand);
-
   static bool dispatch_stage(const std::string &opt, const std::string &arg, void *var);
 
   class VariationData {
   public:
     VariationData() = default;
 
-    ShaderCompiler::Options options;
+    ShaderObject::VariationBuilder builder;
     bool skip;
   };
 
@@ -80,15 +53,12 @@ public:
   ShaderCompiler::Options *_curr_options;
 
   bool _verbose;
-  std::string _shader_source;
-  PT(VirtualFile) _source_vf;
   PT(ShaderObject) _sho;
   ShaderModule::Stage _stage;
   int _num_threads;
   int _num_skipped;
   Filename _input_filename;
   pvector<VariationData> _variations;
-  pvector<SkipCommand> _skip_commands;
   vector_int _non_skipped_variations;
 };
 
