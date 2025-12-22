@@ -708,11 +708,13 @@ int main(int argc, char *argv[]) {
     struct _frozen *new_moddef = (struct _frozen *)calloc(num_modules + 1, sizeof(struct _frozen));
     PyImport_FrozenModules = new_moddef;
     for (moddef = blobinfo.pointers[0]; moddef < moddef_end; ++moddef) {
+      memset(new_moddef, 0, sizeof(struct _frozen));
       new_moddef->name = moddef->name;
       new_moddef->code = moddef->code;
       new_moddef->size = moddef->size < 0 ? -(moddef->size) : moddef->size;
       new_moddef->is_package = moddef->size < 0;
-      new_moddef->get_code = NULL;
+      // Removed in Python 3.14, possibly prior, we don't use it anyway.
+      //new_moddef->get_code = NULL;
       new_moddef++;
     }
 #endif
