@@ -614,6 +614,53 @@ convert_txo(Texture *tex) {
   }
 }
 
+/**
+ * Creates a GraphicsBuffer for communicating with the graphics card.
+ */
+bool EggToBam::
+make_buffer() {
+  if (!_load_display.empty()) {
+    // Override the user's config file with the command-line parameter.
+    std::string prc = "load-display " + _load_display;
+    load_prc_file_data("prc", prc);
+  }
+
+  GraphicsPipeSelection *selection = GraphicsPipeSelection::get_global_ptr();
+  _pipe = selection->make_default_pipe();
+  if (_pipe == nullptr) {
+    nout << "Unable to create graphics pipe.\n";
+    return false;
+  }
+
+  _engine = new GraphicsEngine;
+
+  FrameBufferProperties fbprops = FrameBufferProperties::get_default();
+
+  // Some graphics drivers can only create single-buffered offscreen buffers.
+  // So request that.
+  fbprops.set_back_buffers(0);
+
+  WindowProperties winprops;
+  winprops.set_size(1, 1);
+  winprops.set_origin(0, 0);
+  winprops.set_undecorated(true);
+  winprops.set_open(true);
+  winprops.set_z_order(WindowProperties::Z_bottom);
+
+  // We don't care how big the buffer is; we just need it to manifest the GSG.
+  _buffer = _engine->make_output(_pipe, "buffer", 0,
+                                 fbprops, winprops,
+                                 GraphicsPipe::BF_fb_props_optional);
+  _engine->open_windows();
+  if (_buffer == nullptr || !_buffer->is_valid()) {
+    nout << "Unable to create graphics window.\n";
+    return false;
+  }
+  _gsg = _buffer->get_gsg();
+
+  return true;
+}
+
 int main(int argc, char *argv[]) {
   EggToBam prog;
   prog.parse_command_line(argc, argv);
