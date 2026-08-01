@@ -378,7 +378,7 @@ static int enable_line_buffering(PyObject *file) {
 
 #ifdef WIN_UNICODE
 //#pragma message("win unicode")
-int Py_FrozenMain(int argc, wchar_t **argv)
+int Deploy_FrozenMain(int argc, wchar_t **argv)
 #else
 //#pragma message("win not unicode")
 int Py_FrozenMain(int argc, char **argv)
@@ -742,7 +742,11 @@ int main(int argc, char *argv[]) {
 #endif
 
   // Run frozen application
+#ifdef WIN_UNICODE
+  retval = Deploy_FrozenMain(argc, argv);
+#else
   retval = Py_FrozenMain(argc, argv);
+#endif
 
   fflush(stdout);
   fflush(stderr);
